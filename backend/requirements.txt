@@ -1,0 +1,27 @@
+# Core Django
+Django==5.0.0
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+
+# LangGraph and LLM (remove version pins to let pip resolve)
+langgraph>=0.2.0
+langchain>=0.2.16
+langchain-openai>=0.1.25
+langchain-core>=0.2.40
+langchain-community>=0.2.16
+
+# Document Processing
+unstructured>=0.15.0
+python-magic==0.4.27
+pdf2image==1.17.0
+Pillow>=10.0.0
+
+# Utilities
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# Testing (optional for now)
+pytest==8.3.3
+pytest-django==4.9.0
