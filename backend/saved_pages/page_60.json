@@ -1,0 +1,50 @@
+[
+    {
+        "title": "",
+        "text": "If on any Distribution Date the allocation to the Senior Certificates then entitled to distributions of principal of related full and partial principal prepayments and other amounts in the percentage required above would reduce the sum of the Class Principal Amounts of those Certificates below zero, the distribution to the class or classes of Certificates of the related Senior Prepayment Percentage of those amounts for such Distribution Date will be limited to the percentage necessary to reduce the related Class Principal Amount to zero.",
+        "table": null
+    },
+    {
+        "title": "SUBORDINATE PRINCIPAL DISTRIBUTION AMOUNT",
+        "text": "Except as provided in the next paragraph, from the Available Distribution Amount remaining after the payment of interest and principal to the Senior Certificates and any Subordinate Certificate ranking in higher priority as described at \u201c\u2014 Priority of Distributions,\u201d each class of Subordinate Certificates will be entitled to receive on each Distribution Date, first, payments in respect of interest and second, its pro rata share of each Subordinate Principal Distribution Amount. Distributions of principal with respect to the Subordinate Certificates will be made on each Distribution Date sequentially to the classes of Subordinate Certificates in order of their numerical class designations, beginning with the Class B-1 Certificates, until each such class has received its pro rata share for that Distribution Date. Distributions of each such class\u2019 share of the Subordinate Principal Distribution Amount will be made only after payments of interest and principal to each class ranking senior to such class, and interest to such class, have been paid. See \u201c\u2014 Priority of Distributions.\u201d\n\nWith respect to each class of Subordinate Certificates, if on any Distribution Date the sum of the Class Subordination Percentage of that class and the aggregate Class Subordination Percentages of all classes of Subordinate Certificates which have higher numerical class designations than that class is less than the Applicable Credit Support Percentage for that class on the date of issuance of the Certificates, no distribution of principal prepayments will be made to any such classes and the amount otherwise distributable to those classes in respect of principal prepayments will be allocated among any classes of Subordinate Certificates having lower numerical class designations than such class, pro rata, based upon their respective Class Principal Amounts, and distributed in the order described above.",
+        "table": null
+    },
+    {
+        "title": "",
+        "text": "The \u201cApplicable Credit Support Percentage\u201d for each class of Subordinate Certificates and any Distribution Date will equal the sum of the Class Subordination Percentage of that class and the aggregate Class Subordination Percentage of all other classes of Subordinate Certificates having higher numerical class designations than that class.\n\nThe \u201cClass Subordination Percentage\u201d for any Distribution Date and each class of Subordinate Certificates will equal a fraction (expressed as a percentage), the numerator of which is the Class Principal Amount of that class immediately before that Distribution Date and the denominator of which is the aggregate Class Principal Amount of all classes of Certificates immediately before that Distribution Date.",
+        "table": null
+    },
+    {
+        "title": "",
+        "text": "The approximate original Applicable Credit Support Percentages for the Subordinate Classes of Certificates on the date of issuance of such Certificates are expected to be as follows:",
+        "table": {
+            "summary": "Applicable Credit Support Percentages for Subordinate Classes of Certificates",
+            "data": [
+                {
+                    "Class": "Class B-1",
+                    "Percentage": "2.70%"
+                },
+                {
+                    "Class": "Class B-2",
+                    "Percentage": "1.40%"
+                },
+                {
+                    "Class": "Class B-3",
+                    "Percentage": "0.85%"
+                },
+                {
+                    "Class": "Class B-4",
+                    "Percentage": "0.50%"
+                },
+                {
+                    "Class": "Class B-5",
+                    "Percentage": "0.30%"
+                },
+                {
+                    "Class": "Class B-6",
+                    "Percentage": "0.15%"
+                }
+            ]
+        }
+    }
+]

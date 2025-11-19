@@ -1,0 +1,98 @@
+[
+    {
+        "title": "MATERIAL FEDERAL INCOME TAX CONSEQUENCES",
+        "text": "The trustee will elect to treat all or a portion of the assets of the trust fund as comprising multiple REMICs for federal income tax purposes. Each of the certificates, other than the Class A-R Certificate, will represent ownership of \u201cregular interests\u201d in a REMIC and the Class A-R Certificate will be designated as the sole class of \u201cresidual interest\u201d in the upper-tier REMIC.\n\nThere are restrictions on the types of investors that are permitted to purchase the Class A-R Certificate.\n\nWe refer you to \u201cMaterial Federal Income Tax Consequences\u201d in this prospectus supplement and in the prospectus for more information.",
+        "table": null
+    },
+    {
+        "title": "ERISA MATTERS",
+        "text": "Subject to important considerations described under \u201cERISA Matters\u201d in this prospectus supplement and \u201cERISA Considerations\u201d in the accompanying prospectus, the offered certificates, other than the Class A-R Certificate, will be eligible for purchase by persons investing assets of employee benefit plans or individual retirement accounts. The Class A-R Certificate will NOT be eligible for purchase by any such plan or account.\n\nWe refer you to \u201cERISA Matters\u201d in this prospectus supplement and \u201cERISA Considerations\u201d in the accompanying prospectus for more information.",
+        "table": null
+    },
+    {
+        "title": "LEGAL INVESTMENT",
+        "text": "Generally all of the certificates offered by this prospectus supplement (except the Class A-R, Class B-2 and Class B-3 Certificates) will constitute \u201cmortgage related securities\u201d for purposes of the Secondary Mortgage Market Enhancement Act of 1984.\n\nThere are other restrictions on the ability of certain types of investors to purchase the certificates that prospective investors should consider.",
+        "table": null
+    },
+    {
+        "title": "RATING OF THE CERTIFICATES",
+        "text": "The certificates offered by this prospectus supplement will initially have ratings at least as high as the following ratings from Moody\u2019s Investors Service, Inc., Standard & Poor\u2019s Ratings Services, a division of The McGraw-Hill Companies, Inc. and Fitch Ratings.",
+        "table": {
+            "summary": "Initial ratings of the certificates from Moody\u2019s, S&P, and Fitch.",
+            "data": [
+                {
+                    "CLASS": "1-A-1",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "2-A-1",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "3-A-1",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-1",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-2",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-3",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-4",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-5",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "4-A-6",
+                    "MOODY\u2019S RATING": "Aaa",
+                    "S&P RATING": "AAA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "B-1",
+                    "MOODY\u2019S RATING": "*",
+                    "S&P RATING": "AA",
+                    "FITCH RATING": "AAA"
+                },
+                {
+                    "CLASS": "B-2",
+                    "MOODY\u2019S RATING": "*",
+                    "S&P RATING": "A",
+                    "FITCH RATING": "A"
+                },
+                {
+                    "CLASS": "B-3",
+                    "MOODY\u2019S RATING": "*",
+                    "S&P RATING": "BBB",
+                    "FITCH RATING": "BBB"
+                }
+            ]
+        }
+    }
+]
