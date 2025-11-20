@@ -2,13 +2,14 @@
 Database models for CMO Analyst Agent.
 
 This module defines the core data structures for storing:
-- Prospectus documents
-- Section mappings and extracted information
-- Conversations and messages
-- Generated TrancheSpeak scripts
+- Prospectus documents with parsed pages
+- Hierarchical section mappings (self-referencing tree)
+- Tranche definitions and declarations
+- Generated TrancheSpeak scripts with deal structure
 """
 
 from django.db import models
+from django.contrib.auth.models import User
 import uuid
 
 
@@ -17,61 +18,49 @@ class Prospectus(models.Model):
     Stores uploaded CMO prospectus documents.
 
     Attributes:
-        id: UUID primary key
-        file: Uploaded PDF file
-        filename: Original filename
-        deal_name: Name of the CMO deal (extracted from prospectus)
+        prospectus_id: UUID primary key
+        prospectus_name: Name/identifier of the prospectus
+        prospectus_file: Uploaded PDF file
         upload_date: Timestamp of upload
-        file_size: Size of the file in bytes
-        processing_status: Current processing state
+        created_by: User who uploaded the prospectus
         metadata: Additional metadata as JSON
+        parsed_pages: List of parsed pages from the current prospectus
     """
 
-    class ProcessingStatus(models.TextChoices):
-        """Processing status choices."""
-        UPLOADED = 'uploaded', 'Uploaded'
-        PARSING = 'parsing', 'Parsing'
-        PARSED = 'parsed', 'Parsed'
-        FAILED = 'failed', 'Failed'
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    file = models.FileField(upload_to='prospectus/')
-    filename = models.CharField(max_length=255)
-    deal_name = models.CharField(max_length=255, null=True, blank=True)
+    prospectus_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    prospectus_name = models.CharField(max_length=255)
+    prospectus_file = models.FileField(upload_to='prospectus/')
     upload_date = models.DateTimeField(auto_now_add=True)
-    file_size = models.BigIntegerField()
-    processing_status = models.CharField(
-        max_length=20,
-        choices=ProcessingStatus.choices,
-        default=ProcessingStatus.UPLOADED
-    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prospectuses')
     metadata = models.JSONField(default=dict, blank=True)
+    parsed_pages = models.JSONField(default=list, blank=True)  # List of parsed page objects
 
     class Meta:
         db_table = 'prospectus'
         ordering = ['-upload_date']
 
     def __str__(self):
-        return f"{self.deal_name or self.filename} - {self.processing_status}"
+        return f"{self.prospectus_name}"
 
 
-class SectionMapping(models.Model):
+class ProspectusSection(models.Model):
     """
-    Stores parsed sections from prospectus with their content and classification.
+    Stores parsed sections from prospectus with hierarchical structure.
 
-    Each section represents a distinct part of the prospectus (e.g., Deal Summary,
-    Tranche Details, Payment Priority, etc.) with the extracted text content.
+    Self-referencing tree structure to handle sections and subsections
+    at arbitrary nesting depths.
 
     Attributes:
-        id: UUID primary key
-        prospectus: Foreign key to Prospectus
-        section_type: Type of section (deal_summary, tranche_list, etc.)
-        section_title: Title/heading of the section
-        content: Extracted text content
+        prospectus_id: Foreign key to Prospectus
+        parent: Self-referencing foreign key for hierarchy (null for root sections)
+        section_type: Type/classification of section
+        title: Section heading/title
+        content: Extracted text content at this level
         page_numbers: List of page numbers where this section appears
-        confidence_score: LLM confidence in classification (0-1)
-        metadata: Additional metadata as JSON
-        created_at: Timestamp of creation
+        level: Depth in hierarchy (0=root, 1=section, 2=subsection, etc.)
+        order: Order within parent for sorting
+        structured_data: Flexible JSON storage for parsed/structured data
+        metadata: Additional parsing metadata (confidence scores, method, etc.)
     """
 
     class SectionType(models.TextChoices):
@@ -89,177 +78,151 @@ class SectionMapping(models.Model):
         RISK_FACTORS = 'risk_factors', 'Risk Factors'
         OTHER = 'other', 'Other'
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    prospectus = models.ForeignKey(
+    prospectus_id = models.ForeignKey(
         Prospectus,
         on_delete=models.CASCADE,
-        related_name='sections'
+        related_name='sections',
+        db_column='prospectus_id'
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subsections'
     )
     section_type = models.CharField(
         max_length=50,
         choices=SectionType.choices
     )
-    section_title = models.CharField(max_length=500)
+    title = models.CharField(max_length=500)
     content = models.TextField()
     page_numbers = models.JSONField(default=list)
-    confidence_score = models.FloatField(null=True, blank=True)
+    level = models.IntegerField(default=0)
+    order = models.IntegerField(default=0)
+    structured_data = models.JSONField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'section_mapping'
-        ordering = ['prospectus', 'section_type']
+        db_table = 'prospectus_section'
+        ordering = ['prospectus_id', 'order']
         indexes = [
-            models.Index(fields=['prospectus', 'section_type']),
+            models.Index(fields=['prospectus_id', 'section_type']),
+            models.Index(fields=['parent']),
         ]
 
     def __str__(self):
-        return f"{self.section_type} - {self.section_title[:50]}"
+        return f"{self.section_type} - {self.title[:50]} (Level {self.level})"
 
 
-class Conversation(models.Model):
+class TranchesDefinition(models.Model):
     """
-    Stores conversation sessions between user and agent.
+    Stores deal-level tranche definitions and parameters.
 
-    Each conversation is tied to a specific prospectus and maintains
-    the chat history and context.
+    Global parameters that apply to all tranches in the deal.
 
     Attributes:
-        id: UUID primary key
-        prospectus: Foreign key to Prospectus
-        title: Conversation title (auto-generated or user-provided)
-        created_at: Timestamp of creation
-        updated_at: Timestamp of last update
-        is_active: Whether conversation is still active
-        metadata: Additional metadata (e.g., user preferences)
+        deal_id: Unique identifier for the deal
+        dated_date: Deal dated date
+        first_pay_date: First payment date
+        delay: Payment delay in days
+        pay_freq: Payment frequency (monthly, quarterly, etc.)
+        interest_day_count: Day count convention for interest
+        currency: Currency denomination
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    prospectus = models.ForeignKey(
-        Prospectus,
-        on_delete=models.CASCADE,
-        related_name='conversations'
-    )
-    title = models.CharField(max_length=255, default='New Conversation')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-    metadata = models.JSONField(default=dict, blank=True)
+    deal_id = models.CharField(max_length=100, primary_key=True)
+    dated_date = models.DateField(null=True, blank=True)
+    first_pay_date = models.DateField(null=True, blank=True)
+    delay = models.IntegerField(null=True, blank=True, help_text="Payment delay in days")
+    pay_freq = models.CharField(max_length=50, null=True, blank=True, help_text="Payment frequency")
+    interest_day_count = models.CharField(max_length=50, null=True, blank=True)
+    currency = models.CharField(max_length=10, default='USD')
 
     class Meta:
-        db_table = 'conversation'
-        ordering = ['-updated_at']
+        db_table = 'tranches_definition'
 
     def __str__(self):
-        return f"{self.title} - {self.prospectus.deal_name}"
+        return f"Tranches Definition - {self.deal_id}"
 
 
-class Message(models.Model):
+class TrancheDeclaration(models.Model):
     """
-    Stores individual messages within a conversation.
+    Stores individual tranche declarations within a deal.
+
+    Each tranche has specific parameters like balance, coupon, etc.
 
     Attributes:
-        id: UUID primary key
-        conversation: Foreign key to Conversation
-        role: Message sender (user, assistant, system)
-        content: Message content
-        message_type: Type of message (text, script_generation, etc.)
-        metadata: Additional data (tool calls, retrieved context, etc.)
-        created_at: Timestamp of creation
+        deal_id: Foreign key to TranchesDefinition
+        percentage: Percentage of deal (if applicable)
+        amount: Original balance/amount
+        principal_type: Type of principal payment (sequential, pro-rata, etc.)
+        coupon_type: Fixed, floating, step, etc.
+        coupon_rate: Coupon rate (for fixed) or spread (for floating)
+        delay: Tranche-specific delay (overrides deal-level if set)
+        group_name: Collateral group assignment
+        comment: Additional notes/comments
     """
 
-    class Role(models.TextChoices):
-        """Message sender roles."""
-        USER = 'user', 'User'
-        ASSISTANT = 'assistant', 'Assistant'
-        SYSTEM = 'system', 'System'
-
-    class MessageType(models.TextChoices):
-        """Types of messages."""
-        TEXT = 'text', 'Text'
-        SCRIPT_GENERATION = 'script_generation', 'Script Generation'
-        QUERY_ANALYSIS = 'query_analysis', 'Query Analysis'
-        ERROR = 'error', 'Error'
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    conversation = models.ForeignKey(
-        Conversation,
+    deal_id = models.ForeignKey(
+        TranchesDefinition,
         on_delete=models.CASCADE,
-        related_name='messages'
+        related_name='tranches',
+        db_column='deal_id'
     )
-    role = models.CharField(max_length=20, choices=Role.choices)
-    content = models.TextField()
-    message_type = models.CharField(
-        max_length=30,
-        choices=MessageType.choices,
-        default=MessageType.TEXT
-    )
-    metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now=True)
+    percentage = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    principal_type = models.CharField(max_length=50, null=True, blank=True)
+    coupon_type = models.CharField(max_length=50, null=True, blank=True)
+    coupon_rate = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    delay = models.IntegerField(null=True, blank=True, help_text="Tranche-specific delay")
+    group_name = models.CharField(max_length=100, null=True, blank=True)
+    comment = models.TextField(null=True, blank=True)
 
     class Meta:
-        db_table = 'message'
-        ordering = ['created_at']
-        indexes = [
-            models.Index(fields=['conversation', 'created_at']),
-        ]
+        db_table = 'tranche_declaration'
 
     def __str__(self):
-        return f"{self.role}: {self.content[:50]}"
+        return f"Tranche - {self.deal_id} ({self.group_name})"
 
 
-class TrancheScript(models.Model):
+class DealScript(models.Model):
     """
-    Stores generated TrancheSpeak scripts.
+    Stores generated TrancheSpeak scripts with deal structure.
 
     Attributes:
-        id: UUID primary key
-        prospectus: Foreign key to Prospectus
-        script_content: Generated TrancheSpeak script
-        version: Version number for tracking iterations
-        generation_status: Status of script generation
-        validation_errors: Any validation errors in JSON format
-        created_at: Timestamp of creation
-        created_by_message: Optional link to message that triggered generation
+        deal_id: Foreign key to TranchesDefinition
+        prospectus_id: Foreign key to Prospectus
+        script_content: Generated TrancheSpeak script content
+        generated_date: Timestamp of generation
+        collateral_groups: JSON field storing groups (e.g., ["group1", "group2"])
+        deal_tree: JSON field storing hierarchical deal structure
+                   Example: {
+                       "group1": {"HIDA": ["A1", "A2"]},
+                       "group2": {"HIDB": ["B1", "B2"]}
+                   }
     """
 
-    class GenerationStatus(models.TextChoices):
-        """Script generation status."""
-        GENERATING = 'generating', 'Generating'
-        COMPLETED = 'completed', 'Completed'
-        FAILED = 'failed', 'Failed'
-        VALIDATING = 'validating', 'Validating'
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    prospectus = models.ForeignKey(
+    deal_id = models.ForeignKey(
+        TranchesDefinition,
+        on_delete=models.CASCADE,
+        related_name='scripts',
+        db_column='deal_id'
+    )
+    prospectus_id = models.ForeignKey(
         Prospectus,
         on_delete=models.CASCADE,
-        related_name='scripts'
+        related_name='deal_scripts',
+        db_column='prospectus_id'
     )
     script_content = models.TextField()
-    version = models.IntegerField(default=1)
-    generation_status = models.CharField(
-        max_length=20,
-        choices=GenerationStatus.choices,
-        default=GenerationStatus.GENERATING
-    )
-    validation_errors = models.JSONField(default=list, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    created_by_message = models.ForeignKey(
-        Message,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='generated_scripts'
-    )
+    generated_date = models.DateTimeField(auto_now_add=True)
+    collateral_groups = models.JSONField(default=list, blank=True)  # ["group1", "group2"]
+    deal_tree = models.JSONField(default=dict, blank=True)  # Hierarchical structure
 
     class Meta:
-        db_table = 'tranche_script'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['prospectus', '-version']),
-        ]
+        db_table = 'deal_script'
+        ordering = ['-generated_date']
 
     def __str__(self):
-        return f"Script v{self.version} for {self.prospectus.deal_name}"
+        return f"Script for {self.deal_id} - {self.generated_date}"

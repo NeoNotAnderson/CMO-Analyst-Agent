@@ -5,10 +5,10 @@ Django admin configuration for CMO Analyst Agent models.
 from django.contrib import admin
 from .models import (
     Prospectus,
-    SectionMapping,
-    Conversation,
-    Message,
-    TrancheScript
+    ProspectusSection,
+    TranchesDefinition,
+    TrancheDeclaration,
+    DealScript
 )
 
 
@@ -16,126 +16,115 @@ from .models import (
 class ProspectusAdmin(admin.ModelAdmin):
     """Admin interface for Prospectus model."""
 
-    list_display = ('filename', 'deal_name', 'processing_status', 'upload_date', 'file_size')
-    list_filter = ('processing_status', 'upload_date')
-    search_fields = ('filename', 'deal_name')
-    readonly_fields = ('id', 'upload_date', 'file_size')
+    list_display = ('prospectus_name', 'created_by', 'upload_date')
+    list_filter = ('upload_date', 'created_by')
+    search_fields = ('prospectus_name',)
+    readonly_fields = ('prospectus_id', 'upload_date')
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'filename', 'deal_name', 'file')
+            'fields': ('prospectus_id', 'prospectus_name', 'prospectus_file', 'created_by')
         }),
-        ('Status', {
-            'fields': ('processing_status', 'upload_date', 'file_size')
+        ('Dates', {
+            'fields': ('upload_date',)
         }),
-        ('Metadata', {
-            'fields': ('metadata',),
+        ('Data', {
+            'fields': ('metadata', 'parsed_pages'),
             'classes': ('collapse',)
         }),
     )
 
 
-@admin.register(SectionMapping)
-class SectionMappingAdmin(admin.ModelAdmin):
-    """Admin interface for SectionMapping model."""
+@admin.register(ProspectusSection)
+class ProspectusSectionAdmin(admin.ModelAdmin):
+    """Admin interface for ProspectusSection model."""
 
-    list_display = ('section_title', 'section_type', 'prospectus', 'confidence_score', 'created_at')
-    list_filter = ('section_type', 'created_at')
-    search_fields = ('section_title', 'content', 'prospectus__deal_name')
-    readonly_fields = ('id', 'created_at')
+    list_display = ('title', 'section_type', 'prospectus_id', 'level', 'order')
+    list_filter = ('section_type', 'level')
+    search_fields = ('title', 'content')
+    readonly_fields = ('prospectus_id',)
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'prospectus', 'section_type', 'section_title')
+            'fields': ('prospectus_id', 'parent', 'section_type', 'title')
+        }),
+        ('Hierarchy', {
+            'fields': ('level', 'order')
         }),
         ('Content', {
             'fields': ('content', 'page_numbers')
         }),
-        ('Metadata', {
-            'fields': ('confidence_score', 'metadata', 'created_at'),
+        ('Data', {
+            'fields': ('structured_data', 'metadata'),
             'classes': ('collapse',)
         }),
     )
 
 
-@admin.register(Conversation)
-class ConversationAdmin(admin.ModelAdmin):
-    """Admin interface for Conversation model."""
+@admin.register(TranchesDefinition)
+class TranchesDefinitionAdmin(admin.ModelAdmin):
+    """Admin interface for TranchesDefinition model."""
 
-    list_display = ('title', 'prospectus', 'is_active', 'created_at', 'updated_at')
-    list_filter = ('is_active', 'created_at', 'updated_at')
-    search_fields = ('title', 'prospectus__deal_name')
-    readonly_fields = ('id', 'created_at', 'updated_at')
+    list_display = ('deal_id', 'dated_date', 'first_pay_date', 'pay_freq', 'currency')
+    search_fields = ('deal_id',)
+    readonly_fields = ('deal_id',)
+
+    fieldsets = (
+        ('Deal Information', {
+            'fields': ('deal_id', 'currency')
+        }),
+        ('Dates and Frequency', {
+            'fields': ('dated_date', 'first_pay_date', 'delay', 'pay_freq')
+        }),
+        ('Interest Settings', {
+            'fields': ('interest_day_count',)
+        }),
+    )
+
+
+@admin.register(TrancheDeclaration)
+class TrancheDeclarationAdmin(admin.ModelAdmin):
+    """Admin interface for TrancheDeclaration model."""
+
+    list_display = ('deal_id', 'group_name', 'amount', 'coupon_type', 'coupon_rate')
+    list_filter = ('coupon_type', 'principal_type')
+    search_fields = ('group_name', 'comment')
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'prospectus', 'title', 'is_active')
+            'fields': ('deal_id', 'group_name')
         }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at')
+        ('Amounts', {
+            'fields': ('percentage', 'amount')
         }),
-        ('Metadata', {
-            'fields': ('metadata',),
+        ('Payment Details', {
+            'fields': ('principal_type', 'coupon_type', 'coupon_rate', 'delay')
+        }),
+        ('Notes', {
+            'fields': ('comment',),
             'classes': ('collapse',)
         }),
     )
 
 
-@admin.register(Message)
-class MessageAdmin(admin.ModelAdmin):
-    """Admin interface for Message model."""
+@admin.register(DealScript)
+class DealScriptAdmin(admin.ModelAdmin):
+    """Admin interface for DealScript model."""
 
-    list_display = ('get_preview', 'role', 'message_type', 'conversation', 'created_at')
-    list_filter = ('role', 'message_type', 'created_at')
-    search_fields = ('content', 'conversation__title')
-    readonly_fields = ('id', 'created_at')
-
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('id', 'conversation', 'role', 'message_type')
-        }),
-        ('Content', {
-            'fields': ('content',)
-        }),
-        ('Metadata', {
-            'fields': ('metadata', 'created_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def get_preview(self, obj):
-        """Return preview of message content."""
-        return obj.content[:75] + '...' if len(obj.content) > 75 else obj.content
-    get_preview.short_description = 'Preview'
-
-
-@admin.register(TrancheScript)
-class TrancheScriptAdmin(admin.ModelAdmin):
-    """Admin interface for TrancheScript model."""
-
-    list_display = ('get_script_name', 'prospectus', 'version', 'generation_status', 'created_at')
-    list_filter = ('generation_status', 'created_at')
-    search_fields = ('script_content', 'prospectus__deal_name')
-    readonly_fields = ('id', 'created_at', 'version')
+    list_display = ('deal_id', 'prospectus_id', 'generated_date')
+    list_filter = ('generated_date',)
+    search_fields = ('script_content',)
+    readonly_fields = ('generated_date',)
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('id', 'prospectus', 'version', 'generation_status')
+            'fields': ('deal_id', 'prospectus_id', 'generated_date')
         }),
         ('Script Content', {
             'fields': ('script_content',)
         }),
-        ('Validation', {
-            'fields': ('validation_errors',),
-            'classes': ('collapse',)
-        }),
-        ('Metadata', {
-            'fields': ('metadata', 'created_at', 'created_by_message'),
+        ('Structure', {
+            'fields': ('collateral_groups', 'deal_tree'),
             'classes': ('collapse',)
         }),
     )
-
-    def get_script_name(self, obj):
-        """Return script name with version."""
-        return f"Script v{obj.version}"
-    get_script_name.short_description = 'Script'
