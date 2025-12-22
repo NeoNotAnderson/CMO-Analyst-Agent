@@ -1,0 +1,367 @@
+{
+    "sections": [
+        {
+            "title": "SUMMARY",
+            "page": "S-1",
+            "level": 1,
+            "sections": [],
+            "page_num": 1
+        },
+        {
+            "title": "RISK FACTORS",
+            "page": "S-7",
+            "level": 1,
+            "sections": [],
+            "page_num": 7
+        },
+        {
+            "title": "DESCRIPTION OF THE MORTGAGE POOLS",
+            "page": "S-12",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "General",
+                    "page": "S-12",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 12
+                },
+                {
+                    "title": "The Mortgage Loans",
+                    "page": "S-12",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 12
+                },
+                {
+                    "title": "The Additional Collateral Loans",
+                    "page": "S-15",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 15
+                },
+                {
+                    "title": "Tabular Characteristics of the Mortgage Loans (Aggregate Pool)",
+                    "page": "S-16",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 16
+                },
+                {
+                    "title": "The Indices",
+                    "page": "S-41",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 41
+                },
+                {
+                    "title": "Assignment of the Mortgage Loans",
+                    "page": "S-42",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 42
+                },
+                {
+                    "title": "Underwriting Standards",
+                    "page": "S-43",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 43
+                }
+            ],
+            "page_num": 12
+        },
+        {
+            "title": "DESCRIPTION OF THE CERTIFICATES",
+            "page": "S-48",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "General",
+                    "page": "S-48",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 48
+                },
+                {
+                    "title": "Book-Entry Certificates",
+                    "page": "S-50",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 50
+                },
+                {
+                    "title": "Payments on Mortgage Loans; Accounts",
+                    "page": "S-52",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 52
+                },
+                {
+                    "title": "Available Distribution Amount",
+                    "page": "S-52",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 52
+                },
+                {
+                    "title": "Distributions of Interest",
+                    "page": "S-53",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 53
+                },
+                {
+                    "title": "Distributions of Principal",
+                    "page": "S-57",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 57
+                },
+                {
+                    "title": "Priority of Distributions",
+                    "page": "S-62",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 62
+                },
+                {
+                    "title": "Limited Cross-Collateralization",
+                    "page": "S-64",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 64
+                },
+                {
+                    "title": "Subordination of the Payment of the Subordinate Certificates",
+                    "page": "S-65",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 65
+                },
+                {
+                    "title": "Allocation of Losses",
+                    "page": "S-65",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 65
+                },
+                {
+                    "title": "Reports to Certificateholders",
+                    "page": "S-67",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 67
+                },
+                {
+                    "title": "Final Scheduled Distribution Date",
+                    "page": "S-69",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 69
+                },
+                {
+                    "title": "Optional Clean-Up Redemption of the Certificates",
+                    "page": "S-69",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 69
+                },
+                {
+                    "title": "The Trustee and the Securities Administrator",
+                    "page": "S-69",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 69
+                },
+                {
+                    "title": "Voting Rights",
+                    "page": "S-69",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 69
+                }
+            ],
+            "page_num": 48
+        },
+        {
+            "title": "THE SERVICER",
+            "page": "S-70",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "Cendant Mortgage Corporation",
+                    "page": "S-70",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 70
+                }
+            ],
+            "page_num": 70
+        },
+        {
+            "title": "SERVICING OF THE MORTGAGE LOANS",
+            "page": "S-72",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "General",
+                    "page": "S-72",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 72
+                },
+                {
+                    "title": "Servicing and Collection Procedures",
+                    "page": "S-72",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 72
+                },
+                {
+                    "title": "Servicing Compensation and Payment of Expenses; Master Servicing Compensation",
+                    "page": "S-73",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 73
+                },
+                {
+                    "title": "Adjustment to Servicing Fees in Connection with Certain Prepaid Mortgage Loans",
+                    "page": "S-73",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 73
+                },
+                {
+                    "title": "Advances",
+                    "page": "S-74",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 74
+                },
+                {
+                    "title": "Evidence as to Compliance",
+                    "page": "S-74",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 74
+                },
+                {
+                    "title": "Master Servicer Default; Servicer Default",
+                    "page": "S-74",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 74
+                },
+                {
+                    "title": "Resignation of Servicer; Assignment and Merger",
+                    "page": "S-75",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 75
+                }
+            ],
+            "page_num": 72
+        },
+        {
+            "title": "YIELD, PREPAYMENT AND WEIGHTED AVERAGE LIFE",
+            "page": "S-75",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "Yield Considerations",
+                    "page": "S-75",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 75
+                },
+                {
+                    "title": "Subordination of the Offered Subordinate Certificates",
+                    "page": "S-77",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 77
+                },
+                {
+                    "title": "Weighted Average Life",
+                    "page": "S-78",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 78
+                },
+                {
+                    "title": "Sensitivity of the Class 4-A-6 Certificates",
+                    "page": "S-84",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 84
+                }
+            ],
+            "page_num": 75
+        },
+        {
+            "title": "USE OF PROCEEDS",
+            "page": "S-84",
+            "level": 1,
+            "sections": [],
+            "page_num": 84
+        },
+        {
+            "title": "MATERIAL FEDERAL INCOME TAX CONSEQUENCES",
+            "page": "S-84",
+            "level": 1,
+            "sections": [
+                {
+                    "title": "General",
+                    "page": "S-84",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 84
+                },
+                {
+                    "title": "The Class A-R Certificates",
+                    "page": "S-85",
+                    "level": 2,
+                    "sections": [],
+                    "page_num": 85
+                }
+            ],
+            "page_num": 84
+        },
+        {
+            "title": "ERISA MATTERS",
+            "page": "S-86",
+            "level": 1,
+            "sections": [],
+            "page_num": 86
+        },
+        {
+            "title": "METHOD OF DISTRIBUTION",
+            "page": "S-89",
+            "level": 1,
+            "sections": [],
+            "page_num": 89
+        },
+        {
+            "title": "LEGAL MATTERS",
+            "page": "S-89",
+            "level": 1,
+            "sections": [],
+            "page_num": 89
+        },
+        {
+            "title": "RATINGS",
+            "page": "S-89",
+            "level": 1,
+            "sections": [],
+            "page_num": 89
+        },
+        {
+            "title": "INDEX OF CERTAIN DEFINITIONS",
+            "page": "I-1",
+            "level": 1,
+            "sections": [],
+            "page_num": 90
+        }
+    ]
+}

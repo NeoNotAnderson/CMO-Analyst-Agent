@@ -1,0 +1,135 @@
+[
+    {
+        "title": "",
+        "text": "the six-month LIBOR index and substantially all of such mortgage loans have original terms to maturity of approximately 30 years.\n\nWith the exception of one mortgage loan, all of the pool 4 mortgage loans provide for payments of interest at the related mortgage interest rate, but no payments of principal, for a period of ten years following origination of such mortgage loan. Following such ten-year period, the monthly payment with respect to each such pool 4 mortgage loan will be increased to an amount sufficient to amortize the principal balance of such mortgage loan over its remaining 20-year term and to pay interest at the related mortgage interest rate.\n\nWe refer you to \u201cDescription of the Mortgage Pools\u201d in this prospectus supplement for more information.",
+        "table": null,
+        "page_num": 5
+    },
+    {
+        "title": "SUMMARY STATISTICAL DATA",
+        "text": "The following table summarizes the characteristics of the mortgage loans in the aggregate and by pool as of the cut-off date. Tabular information concerning the statistical characteristics of the mortgage loans in the aggregate and by mortgage pool as of the cut-off date can be found at \u201cDescription of the Mortgage Pools \u2014 Tabular Characteristics of the Mortgage Loans\u201d in this prospectus supplement.",
+        "table": {
+            "summary": "Summary of mortgage loan characteristics by pool.",
+            "data": [
+                {
+                    "Aggregate Outstanding Principal Balance": "$269,634,761.56"
+                },
+                {
+                    "Pool 1": "$119,753,120.51"
+                },
+                {
+                    "Pool 2": "$40,629,894.49"
+                },
+                {
+                    "Pool 3": "$13,971,002.53"
+                },
+                {
+                    "Pool 4": "$95,776,044.03"
+                },
+                {
+                    "Aggregate Number of Mortgage Loans": "540"
+                },
+                {
+                    "Pool 1": "238"
+                },
+                {
+                    "Pool 2": "98"
+                },
+                {
+                    "Pool 3": "31"
+                },
+                {
+                    "Pool 4": "173"
+                },
+                {
+                    "Aggregate Average Stated Principal Balance": "$499,233.63"
+                },
+                {
+                    "Pool 1": "$503,057.93"
+                },
+                {
+                    "Pool 2": "$414,528.62"
+                },
+                {
+                    "Pool 3": "$450,706.53"
+                },
+                {
+                    "Pool 4": "$552,363.36"
+                },
+                {
+                    "Aggregate Weighted Average Current Mortgage Rate": "4.78%"
+                },
+                {
+                    "Pool 1": "4.62%"
+                },
+                {
+                    "Pool 2": "4.97%"
+                },
+                {
+                    "Pool 3": "5.12%"
+                },
+                {
+                    "Pool 4": "2.15%"
+                },
+                {
+                    "Aggregate Weighted Average Margin": "2.00%"
+                },
+                {
+                    "Pool 1": "2.75%"
+                },
+                {
+                    "Pool 2": "2.75%"
+                },
+                {
+                    "Pool 3": "2.00%"
+                },
+                {
+                    "Pool 4": "2.00%"
+                },
+                {
+                    "Aggregate Weighted Average Original Term to Maturity": "360 months"
+                },
+                {
+                    "Pool 1": "360 months"
+                },
+                {
+                    "Pool 2": "360 months"
+                },
+                {
+                    "Pool 3": "360 months"
+                },
+                {
+                    "Pool 4": "360 months"
+                },
+                {
+                    "Aggregate Weighted Average Remaining Term to Maturity": "357 months"
+                },
+                {
+                    "Pool 1": "357 months"
+                },
+                {
+                    "Pool 2": "358 months"
+                },
+                {
+                    "Pool 3": "358 months"
+                },
+                {
+                    "Pool 4": "357 months"
+                }
+            ]
+        },
+        "page_num": 5
+    },
+    {
+        "title": "ADDITIONAL COLLATERAL LOANS",
+        "text": "Approximately 11.57% and 12.23% of the pool 1 and pool 4 mortgage loans, respectively, in addition to being secured by real property, are secured by a security interest in a limited amount of additional collateral owned by the borrower or a third-party guarantor. Such additional collateral may no longer be required when the principal balance of such additional collateral mortgage loan is reduced to a predetermined amount set forth in the related pledge agreement or guaranty agreement, as applicable, or when the loan-to-value ratio for such additional collateral mortgage loan is reduced to the applicable loan-to-value ratio for such additional collateral mortgage loan by virtue of an increase in the appraised value of the mortgaged property as determined by the servicer.\n\nWe refer you to \u201cDescription of the Mortgage Pools \u2014 The Additional Collateral Loans\u201d for more information.",
+        "table": null,
+        "page_num": 5
+    },
+    {
+        "title": "SERVICING OF THE MORTGAGE LOANS",
+        "text": "The master servicer will supervise the performance of the servicer under the purchase and servicing agreement.\n\nUnder the purchase and servicing agreement, the servicer is generally obligated to make monthly advances of cash (to the extent such advances are deemed recoverable), which will be included with mortgage principal and interest collections, in an amount equal to any delinquent monthly payments due on the mortgage loans on the immediately preceding determination date. The master servicer will be obligated to make any required advance if the servicer fails in its obligation to do so, to the extent described in this prospectus supplement. The master servicer and the servicer will be entitled to reimburse themselves for any such advances from future payments and collections (including insurance or liquidation proceeds) with respect to the mortgage loans. However, if the master servicer or the servicer make advances which are determined to be nonrecoverable from future payments and collections on the related mortgage loan, such parties will be entitled to reimbursement for such advances prior to any distributions to certificateholders.\n\nThe servicer will also make interest payments to compensate in part for any shortfall in interest payments on the certificates which results from a mortgagor prepaying a mortgage loan in whole. However, the amount of such payments will generally not exceed the servicing fee payable to the",
+        "table": null,
+        "page_num": 5
+    }
+]

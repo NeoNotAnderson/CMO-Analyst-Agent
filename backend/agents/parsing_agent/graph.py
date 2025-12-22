@@ -7,12 +7,28 @@ This module defines the graph structure and workflow for parsing prospectuses.
 from langgraph.graph import StateGraph, END
 from .state import ParsingState
 from .nodes import (
-    parse_prospectus_node,
+    check_db_node,
+    parse_index_node,
+    parse_sections_node,
     classify_sections_node,
-    build_hierarchy_node,
-    store_in_database_node,
+    store_sections_node,
     error_handler_node
 )
+
+
+def should_continue_parsing(state: ParsingState) -> str:
+    """
+    Router function to decide if parsing should continue or end.
+
+    Args:
+        state: Current parsing state
+
+    Returns:
+        'end' if parsing is complete, 'parse_index' if needs to continue parsing
+
+    TODO: Implement routing logic based on parsing_complete flag
+    """
+    pass
 
 
 def create_parsing_graph():
@@ -20,11 +36,13 @@ def create_parsing_graph():
     Create the parsing agent graph.
 
     Workflow:
-    1. parse_prospectus -> Extract text from PDF
-    2. classify_sections -> Identify section types
-    3. build_hierarchy -> Create parent-child relationships
-    4. store_in_database -> Save to PostgreSQL
-    5. error_handler -> Handle any errors
+    1. check_db_node -> Check if already parsed in DB
+    2. Conditional: if complete -> END, else -> parse_index_node
+    3. parse_index_node -> Extract and parse index pages
+    4. parse_sections_node -> Parse prospectus section by section
+    5. classify_sections_node -> Classify sections by type using LLM
+    6. store_sections_node -> Save to PostgreSQL
+    7. All nodes can route to error_handler_node on error
 
     Returns:
         Compiled LangGraph
