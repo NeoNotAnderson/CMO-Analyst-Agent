@@ -1,66 +1,75 @@
 """
 LangGraph definition for the Parsing Agent.
 
-This module defines the graph structure and workflow for parsing prospectuses.
+ReAct pattern implementation with simple agent loop.
 """
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode
 from .state import ParsingState
-from .nodes import (
-    check_db_node,
-    parse_index_node,
-    parse_sections_node,
-    classify_sections_node,
-    store_sections_node,
-    error_handler_node
-)
-
-
-def should_continue_parsing(state: ParsingState) -> str:
-    """
-    Router function to decide if parsing should continue or end.
-
-    Args:
-        state: Current parsing state
-
-    Returns:
-        'end' if parsing is complete, 'parse_index' if needs to continue parsing
-
-    TODO: Implement routing logic based on parsing_complete flag
-    """
-    pass
-
+from .nodes import agent_node, should_continue, TOOLS
+from langchain_core.messages import HumanMessage, SystemMessage
+from core.models import Prospectus
 
 def create_parsing_graph():
     """
-    Create the parsing agent graph.
+    Create the ReAct parsing agent graph.
 
-    Workflow:
-    1. check_db_node -> Check if already parsed in DB
-    2. Conditional: if complete -> END, else -> parse_index_node
-    3. parse_index_node -> Extract and parse index pages
-    4. parse_sections_node -> Parse prospectus section by section
-    5. classify_sections_node -> Classify sections by type using LLM
-    6. store_sections_node -> Save to PostgreSQL
-    7. All nodes can route to error_handler_node on error
+    Workflow (ReAct Loop):
+    1. agent_node -> Agent reasons and decides to call tools or finish
+    2. Conditional edge:
+       - If agent made tool calls -> "tools" (ToolNode executes tools)
+       - If no tool calls -> "END" (parsing complete)
+    3. tools -> agent_node (tool results feed back to agent for next reasoning step)
+
+    Simple structure:
+    - START -> agent_node
+    - agent_node -> [should_continue] -> tools OR END
+    - tools -> agent_node (loop back)
 
     Returns:
         Compiled LangGraph
-
-    TODO: Implement graph construction and routing logic
     """
     # Initialize the graph
     workflow = StateGraph(ParsingState)
 
-    # Add nodes
-    # TODO: Add all nodes to the graph
+    # Add nodes and conditional edges
+    workflow.add_node('agent', agent_node)
+    workflow.add_node('tool', ToolNode(TOOLS))
+    workflow.add_edge(START, 'agent')
+    workflow.add_conditional_edges(
+        'agent',
+        should_continue,
+        {
+            'continue': 'tool',
+            'end': END
+        }
+    )
+    workflow.add_edge('tool', 'agent')
+    app = workflow.compile()
+    return app
 
-    # Add edges
-    # TODO: Define the workflow edges and conditional routing
+def run_agent(prospectus: Prospectus):
+    system_message = SystemMessage(content=
+        """
+        You are a financial document parsing assistant specialized in CMO prospectuses.
 
-    # Set entry point
-    # TODO: Set the starting node
+        Your task is to parse the prospectus and save all structured information to the database.
 
-    # Compile and return
-    # TODO: Compile the graph
-    pass
+        Available tools allow you to:
+        - Check if parsing is already complete
+        - Parse index pages to understand document structure  
+        - Parse individual sections and pages
+        - Save results to database
+
+        Think step by step and use the appropriate tools to complete the parsing task.
+        """)
+    
+    user_message = HumanMessage(content=f"Here is the CMO prospectus: {prospectus.prospectus_name}, parsing is consist of two steps, you need to first parse the index, from which you can get the file strcuture. After that, parse the rest of the file based on the parsed index. Use the tools provided and save the result to database.")
+    state = {
+        'prospectus': prospectus,
+        'messages': [system_message, user_message],
+        'errors': []
+    }
+    agent = create_parsing_graph()
+    return agent.invoke(state)

@@ -24,9 +24,49 @@ load_dotenv()
 llm_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @tool
+def check_parsed_index_exists(prospectus: Prospectus) -> bool:
+    """
+    Check if parsed index already exists in the database.
+
+    Args:
+        prospectus: Prospectus object
+
+    Returns:
+        True if parsed_index exists and is not empty, False otherwise
+    """
+    return prospectus.parsed_index is not None and len(prospectus.parsed_index) > 0
+
+@tool
+def save_parsed_index_to_db(prospectus: Prospectus, parsed_index: Dict) -> None:
+    """
+    Save parsed index to the database.
+
+    Automatically adds page_num to all sections if not already present.
+
+    Args:
+        prospectus: Prospectus object
+        parsed_index: Parsed index structure to save
+
+    Returns:
+        None
+    """
+    # Ensure page_num is added to all sections before saving
+    # Check if page_num already exists in first section
+    if parsed_index.get('sections') and len(parsed_index['sections']) > 0:
+        first_section = parsed_index['sections'][0]
+        if 'page_num' not in first_section:
+            # page_num not present, add it
+            add_page_number_to_parsed_index(parsed_index)
+
+    prospectus.parsed_index = parsed_index
+    prospectus.save()
+
 def parse_index_pages(prospectus: Prospectus) -> None:
     """
-    extract and parse the index pages of the pdf file, create a index strcuture which will be used to build the hierarchy
+    Orchestration function (NOT a tool) - extract and parse the index pages of the pdf file, create a index strcuture which will be used to build the hierarchy.
+
+    This function is kept for reference but should NOT be used as a tool in ReAct agent.
+    The agent should autonomously call the granular tools instead.
 
     Args:
         prospectus: a Prospectus object of the prospectuss being parsed
@@ -98,12 +138,23 @@ def add_page_number_to_parsed_index(index_structure: Dict) -> Dict:
 
     return index_structure
 
+@tool
 def determin_doc_type(file_name: str) -> str:
+    """
+    Determine document type from filename.
+
+    Args:
+        file_name: Name of the prospectus file
+
+    Returns:
+        "supplement" or "prospectus"
+    """
     if "supplement" in file_name.lower():
         return "supplement"
     else:
         return "prospectus"
 
+@tool
 def find_index_pages(prospectus: Prospectus, doc_type: str = "supplement") -> List[int]:
     """
     find the idnex page of the PDF file
@@ -169,7 +220,7 @@ def retrieve_parsed_pages_from_db(prospectus: Prospectus, page_numbers: List[int
     Retrieve previously parsed pages from the database.
 
     Args:
-        prospectus: 
+        prospectus: Prospectus object
         page_numbers: List of page numbers
 
     Returns:
@@ -191,12 +242,13 @@ def retrieve_parsed_pages_from_db(prospectus: Prospectus, page_numbers: List[int
         print(f"Error retrieving parsed pages from database: {e}")
         raise
 
+@tool
 def convert_pages_to_images(prospectus: Prospectus, page_numbers: List[int]) -> List[Dict]:
     """
     convert PDF pages to images, so it can be fed to openai vision to further parse
 
     Args:
-        prospectus: 
+        prospectus: Prospectus object
         page_numbers: the page number of the pages which needed to be parsed
 
     Returns:
@@ -219,12 +271,12 @@ def convert_pages_to_images(prospectus: Prospectus, page_numbers: List[int]) -> 
     doc.close()
     return images
 
+@tool
 def parse_page_images_with_openai(page_images: List[Dict], build_prompt: Callable) -> Dict:
     """
     Parse PDF pages images using openai vision
 
     Args:
-        file_path: Path to the PDF file
         page_images: images converted from PDF pages
         build_prompt: function used to create user prompt to feed llm
 
@@ -244,129 +296,134 @@ def parse_page_images_with_openai(page_images: List[Dict], build_prompt: Callabl
     content = response.choices[0].message.content
     return extract_json(content)
 
+@tool
 def build_prompt_for_index_parsing(images:List[Dict]) -> List[Dict]:
-        """
-        Parse PDF index page images using openai vision
+    """
+    Parse PDF index page images using openai vision
 
-        Args:
-            images: images converted from PDF index pages
+    Args:
+        images: images converted from PDF index pages
 
-        Returns:
-            prompt, with images embeded, which provides parsing instructions to llm for it to parse index pages
-        """
-        content = []
-        content.append(
-            {
-                'type': 'text',
-                'text': """
-                        You are parsing the Table of Contents / Index from a CMO prospectus.
-                        
-                        The images show index pages in a 2-COLUMN layout.
+    Returns:
+        prompt, with images embeded, which provides parsing instructions to llm for it to parse index pages
+    """
+    content = []
+    content.append(
+        {
+            'type': 'text',
+            'text': """
+                    You are parsing the Table of Contents / Index from a CMO prospectus.
+                    
+                    The images show index pages in a 2-COLUMN layout.
 
-                        CRITICAL INSTRUCTIONS:
-                        1. Read the LEFT column from top to bottom FIRST
-                        2. Then read the RIGHT column from top to bottom
-                        3. Do NOT treat columns as a single table row
-                        4. Each entry has a similar format: "Section Title.....Page Number" or "Section Title"
-                        5. One section title may take several lines, and the page number maybe missing. you need to return the page number if you could figure it out.
-                        6. Some entries are indented (these are subsections)
-                        7. Skip page headers/footers like "Table of Contents" or page numbers at top
-                        8, there maybe more than on page iamge in the prompt, parse each page one by one in the original order, combine them into one json object and return
-                        9, when combining parsed pages together, pay attention to the level of starting section of each page, make sure they are in the correct section relative to the ending section of the previous page.
+                    CRITICAL INSTRUCTIONS:
+                    1. Read the LEFT column from top to bottom FIRST
+                    2. Then read the RIGHT column from top to bottom
+                    3. Do NOT treat columns as a single table row
+                    4. Each entry has a similar format: "Section Title.....Page Number" or "Section Title"
+                    5. One section title may take several lines, and the page number maybe missing. you need to return the page number if you could figure it out.
+                    6. Some entries are indented (these are subsections)
+                    7. Skip page headers/footers like "Table of Contents" or page numbers at top
+                    8, there maybe more than on page iamge in the prompt, parse each page one by one in the original order, combine them into one json object and return
+                    9, when combining parsed pages together, pay attention to the level of starting section of each page, make sure they are in the correct section relative to the ending section of the previous page.
 
-                        Extract each entry with:
-                        - title: The section name (keep exact text including capitalization)
-                        - page: The page number(which starts with S or I)
-                        - level: 1 for main sections, 2 for subsections, 3 for sub-subsections
-                        - Subsections should be nested under their parent section
+                    Extract each entry with:
+                    - title: The section name (keep exact text including capitalization)
+                    - page: The page number(which starts with S or I)
+                    - level: 1 for main sections, 2 for subsections, 3 for sub-subsections
+                    - Subsections should be nested under their parent section
 
-                        Return ONLY valid JSON in this format:
+                    Return ONLY valid JSON in this format:
+                    {
+                    "sections": [
                         {
+                        "title": "RISK FACTORS",
+                        "page": "S-12",
+                        "level": 1,
+                        "sections": [...]
+                        },
+                        {
+                        "title": "DESCRIPTION OF CERTIFICATES",
+                        "page": "S-25",
+                        "level": 1,
                         "sections": [
                             {
-                            "title": "RISK FACTORS",
-                            "page": "S-12",
-                            "level": 1,
+                            "title": "General",
+                            "page": "S-26",
+                            "level": 2,
                             "sections": [...]
                             },
                             {
-                            "title": "DESCRIPTION OF CERTIFICATES",
-                            "page": "S-25",
-                            "level": 1,
-                            "sections": [
-                                {
-                                "title": "General",
-                                "page": "S-26",
-                                "level": 2,
-                                "sections": [...]
-                                },
-                                {
-                                "title": "Priority of Distributions",
-                                "page": "S-30",
-                                "level": 2,
-                                "sections": [...]
-                                }
-                            ]
+                            "title": "Priority of Distributions",
+                            "page": "S-30",
+                            "level": 2,
+                            "sections": [...]
                             }
                         ]
                         }
+                    ]
+                    }
 
-                        IMPORTANT: Return ONLY the JSON, no additional text or explanation.
-                        """
+                    IMPORTANT: Return ONLY the JSON, no additional text or explanation.
+                    """
+        }
+    )
+    for img_data in images:
+        content.append(
+            {
+                'type':'image_url',
+                'image_url': {
+                    "url": f"data:image/png;base64,{img_data['image']}",
+                    "detail": "high"
+                }
             }
         )
-        for img_data in images:
-            content.append(
-                {
-                    'type':'image_url',
-                    'image_url': {
-                        "url": f"data:image/png;base64,{img_data['image']}",
-                        "detail": "high"
-                    }
-                }
-            )
-        return content
+    return content
 
 def extract_json(content: str) -> Dict:
-        """
-        Extract JSON from response (handles markdown code blocks)
+    """
+    Extract JSON from response (handles markdown code blocks)
+    
+    Args:
+        content: Response text
         
-        Args:
-            content: Response text
-            
-        Returns:
-            Parsed JSON dictionary
-        """
-        # Try to find JSON in markdown code blocks
-        import re
-        
-        # Look for ```json ... ```
-        json_match = re.search(r'```json\s*\n(.*?)\n```', content, re.DOTALL)
+    Returns:
+        Parsed JSON dictionary
+    """
+    # Try to find JSON in markdown code blocks
+    import re
+    
+    # Look for ```json ... ```
+    json_match = re.search(r'```json\s*\n(.*?)\n```', content, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(1)
+        return json.loads(json_str)
+    
+    # Look for ``` ... ``` (without json tag)
+    code_match = re.search(r'```\s*\n(.*?)\n```', content, re.DOTALL)
+    if code_match:
+        json_str = code_match.group(1)
+        return json.loads(json_str)
+    
+    # Try to parse entire content as JSON
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Last resort: look for { ... } pattern
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if json_match:
-            json_str = json_match.group(1)
-            return json.loads(json_str)
+            return json.loads(json_match.group(0))
         
-        # Look for ``` ... ``` (without json tag)
-        code_match = re.search(r'```\s*\n(.*?)\n```', content, re.DOTALL)
-        if code_match:
-            json_str = code_match.group(1)
-            return json.loads(json_str)
-        
-        # Try to parse entire content as JSON
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            # Last resort: look for { ... } pattern
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                return json.loads(json_match.group(0))
-            
-            raise ValueError(f"Could not extract JSON from response: {content[:200]}")
-        
+        raise ValueError(f"Could not extract JSON from response: {content[:200]}")
+
 @tool
 def parse_prospectus_with_parsed_index(prospectus: Prospectus) -> Dict:
     """
     Parse the full prospectus using the parsed index structure as a guide.
+
+    This is a complex orchestration tool that manages nested loops and state across pages.
+    It uses granular helper tools internally but the agent should call this as a single operation
+    because the stateful iteration logic is too complex for the agent to manage manually.
 
     Args:
         prospectus: Prospectus object with parsed_index already populated
@@ -436,6 +493,7 @@ def parse_prospectus_with_parsed_index(prospectus: Prospectus) -> Dict:
     prospectus.save()
     
     return index
+
 def add_page_number_to_parsed_sections(page_sections: List[Dict], page_number: int) -> List[Dict]:
     """
     Add page_num key-value pair to all top-level sections.
@@ -619,16 +677,19 @@ def build_prompt_for_parsing_pages_with_table(images: List[Dict]) -> Dict:
         )
     return content
 
-
 def combine_sections(index_section: Dict, next_index_section_title: str, page_sections: List[Dict], pos: int, last_processed_section: Dict) -> None:
     """
     Combine page_sections from a single page into the index_section (level 1 section from index).
 
     Args:
-        index_section: Level 1 section from index containing 'title', 'text', 'page', 'level', 'sections', 
+        index_section: Level 1 section from index containing 'title', 'text', 'page', 'level', 'sections',
         'sections' represent a list of level 2 sections parsed from index page, containing 'title', 'text', 'table'
         page_sections: List of sections parsed from current page, each with 'title', 'text', 'table', 'title' and 'table' values may be empty
+        pos: Current position in index_section['sections']
+        last_processed_section: Last section that was processed
 
+    Returns:
+        Tuple of (next_pos, last_processed_section)
     """
     #if pos == -1, it means this is the first page of the current index_section
     # first locate the starting section, which has the same title as index_sction
@@ -708,8 +769,7 @@ def combine_sections(index_section: Dict, next_index_section_title: str, page_se
         index_section['sections'] = combined_sections
 
     return next_pos, last_processed_section
-            
-    
+
 def extract_sections(elements: Element, page_number: int) -> List[Dict]:
     """
     Extract sections from parsed PDF elements using Unstructured.io.
@@ -769,7 +829,7 @@ def store_parsed_pages_in_db(prospectus: Prospectus, page_numbers: List[int], pa
     Store the parsed pages in the database for future retrieval.
 
     Args:
-        prospectus: 
+        prospectus: Prospectus object
         page_numbers: List of page numbers that were parsed
         parsed_pages: The parsed pages to store
 
@@ -797,7 +857,7 @@ def store_parsed_pages_in_db(prospectus: Prospectus, page_numbers: List[int], pa
     except Exception as e:
         print(f"Error storing parsed pages in database: {e}")
         return False
-  
+
 @tool
 def classify_sections_with_llm(sections: List[Dict]) -> Dict[str, List[Dict]]:
     """

@@ -1,115 +1,81 @@
 """
 LangGraph nodes for the Parsing Agent.
 
-Each node represents a step in the parsing workflow.
+ReAct pattern implementation with agent_node and conditional routing.
 """
 
-from typing import Dict
 from .state import ParsingState
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.prebuilt import ToolNode
+from dotenv import load_dotenv
+import os
 from .tools import (
-    check_prospectus_exists_in_db,
-    retrieve_complete_prospectus,
-    parse_index_pages,
-    get_section_page_range,
-    parse_single_page,
-    merge_page_into_hierarchy,
+    check_parsed_index_exists,
+    save_parsed_index_to_db,
+    parse_prospectus_with_parsed_index,
     classify_sections_with_llm,
-    store_sections_in_db,
-    store_parsed_pages_in_db
+    determin_doc_type,
+    find_index_pages,
+    convert_pages_to_images,
+    parse_page_images_with_openai,
+    build_prompt_for_index_parsing
 )
 
+load_dotenv()
+api_key=os.getenv("OPENAI_API_KEY")
+llm = ChatOpenAI(model='gpt-5-nano', api_key=api_key)
+# Define the list of tools available to the agent
+# Mix of granular tools and one complex orchestration tool (parse_prospectus_with_parsed_index)
+TOOLS = [
+    check_parsed_index_exists,
+    save_parsed_index_to_db,
+    parse_prospectus_with_parsed_index,
+    classify_sections_with_llm,
+    determin_doc_type,
+    find_index_pages,
+    convert_pages_to_images,
+    parse_page_images_with_openai,
+    build_prompt_for_index_parsing
+]
+llm_with_tools = llm.bind_tools(TOOLS)
 
-def check_db_node(state: ParsingState) -> ParsingState:
+def agent_node(state: ParsingState) -> ParsingState:
     """
-    Node: Check if prospectus is already fully parsed in database.
+    ReAct agent node that autonomously selects and calls tools.
 
-    Steps:
-    1. Check if prospectus exists and is complete in DB
-    2. If yes: retrieve complete prospectus, set parsing_complete=True
-    3. If no: set parsing_complete=False to continue parsing
+    The agent will:
+    1. Receive the current state (including message history)
+    2. Reason about what needs to be done
+    3. Decide which tool(s) to call (if any)
+    4. Return updated state with agent response
 
-    TODO: Implement DB check and retrieval logic
+    Args:
+        state: Current parsing state with messages
+
+    Returns:
+        Updated state with agent's response and tool calls
     """
-    pass
+    messages = state['messages']
+    response = llm_with_tools.invoke(messages)
+    return {'messages': [response]}
 
-
-def parse_index_node(state: ParsingState) -> ParsingState:
+def should_continue(state: ParsingState) -> str:
     """
-    Node: Extract and parse index pages.
+    Conditional edge function to decide next step in ReAct loop.
 
-    Steps:
-    1. Call parse_index_pages tool with file_path and doc_type
-    2. Store parsed index in state['parsed_index']
-    3. Save index pages to DB using store_parsed_pages_in_db
-    4. Update current_step to 'parsing_sections'
+    Decision logic:
+    - If last agent response has tool calls -> route to "tools" (ToolNode)
+    - If parsing is complete -> route to "END"
+    - Otherwise -> route to "END" (agent finished reasoning)
 
-    TODO: Implement index parsing and storage
+    Args:
+        state: Current parsing state
+
+    Returns:
+        "tools" to execute tool calls, "END" to finish
     """
-    pass
-
-
-def parse_sections_node(state: ParsingState) -> ParsingState:
-    """
-    Node: Parse entire prospectus section by section.
-
-    Steps:
-    1. Loop through each level-1 section in parsed_index['sections']
-    2. For each section:
-       a. Get page range using get_section_page_range
-       b. Parse pages one by one using parse_single_page
-       c. Incrementally merge into hierarchy using merge_page_into_hierarchy
-    3. Update state['sections'] with combined hierarchy
-    4. Update current_step to 'classifying'
-
-    TODO: Implement section-by-section parsing with incremental merging
-    """
-    pass
-
-
-def classify_sections_node(state: ParsingState) -> ParsingState:
-    """
-    Node: Classify parsed sections using LLM.
-
-    Steps:
-    1. Take sections from state
-    2. Use classify_sections_with_llm to identify section types
-       (Deal Summary, Tranche List, Payment Priority, etc.)
-    3. Create section_map grouping content by type
-    4. Update current_step to 'storing'
-
-    TODO: Implement LLM-based section classification
-    """
-    pass
-
-
-def store_sections_node(state: ParsingState) -> ParsingState:
-    """
-    Node: Store parsed sections in PostgreSQL database.
-
-    Steps:
-    1. Get prospectus_id and sections from state
-    2. Use store_sections_in_db to create ProspectusSection records
-    3. Set parent-child relationships based on hierarchy
-    4. Update Prospectus status to 'parsed'
-    5. Set parsing_complete=True
-    6. Update current_step to 'completed'
-
-    TODO: Implement database storage using Django ORM
-    """
-    pass
-
-
-def error_handler_node(state: ParsingState) -> ParsingState:
-    """
-    Node: Handle errors during parsing.
-
-    Steps:
-    1. Log errors from state['errors']
-    2. Update Prospectus status to 'failed' in database
-    3. Store error details in metadata
-    4. Set parsing_complete=False
-    5. Return state with error info
-
-    TODO: Implement error handling and logging
-    """
-    pass
+    last_message = state['messages'][-1]
+    if not getattr(last_message, "tool_calls", None):
+        return "end"
+    return "continue"
