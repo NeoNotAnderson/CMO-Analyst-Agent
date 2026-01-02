@@ -10,7 +10,7 @@ import LoginButton from '@/components/LoginButton';
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header/>
 
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">

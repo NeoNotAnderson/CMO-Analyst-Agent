@@ -24,32 +24,35 @@ load_dotenv()
 llm_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @tool
-def check_parsed_index_exists(prospectus: Prospectus) -> bool:
+def check_parsed_index_exists(prospectus_id: str) -> bool:
     """
     Check if parsed index already exists in the database.
 
     Args:
-        prospectus: Prospectus object
+        prospectus_id: UUID string of the Prospectus object
 
     Returns:
         True if parsed_index exists and is not empty, False otherwise
     """
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     return prospectus.parsed_index is not None and len(prospectus.parsed_index) > 0
 
 @tool
-def save_parsed_index_to_db(prospectus: Prospectus, parsed_index: Dict) -> None:
+def save_parsed_index_to_db(prospectus_id: str, parsed_index: Dict) -> None:
     """
     Save parsed index to the database.
 
     Automatically adds page_num to all sections if not already present.
 
     Args:
-        prospectus: Prospectus object
+        prospectus_id: UUID string of the Prospectus object
         parsed_index: Parsed index structure to save
 
     Returns:
         None
     """
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+
     # Ensure page_num is added to all sections before saving
     # Check if page_num already exists in first section
     if parsed_index.get('sections') and len(parsed_index['sections']) > 0:
@@ -87,7 +90,7 @@ def parse_index_pages(prospectus: Prospectus) -> None:
 
     # Parse index pages if not found in database
     images = convert_pages_to_images(prospectus, index_pages)
-    parsed_index = parse_page_images_with_openai(images, build_prompt_for_index_parsing)
+    parsed_index = parse_page_images_with_openai(images, True)
     add_page_number_to_parsed_index(parsed_index)
     prospectus.parsed_index = parsed_index
     prospectus.save()
@@ -155,17 +158,19 @@ def determin_doc_type(file_name: str) -> str:
         return "prospectus"
 
 @tool
-def find_index_pages(prospectus: Prospectus, doc_type: str = "supplement") -> List[int]:
+def find_index_pages(prospectus_id: str, doc_type: str = "supplement") -> List[int]:
     """
-    find the idnex page of the PDF file
+    find the index page of the PDF file
 
     Args:
-        prospectus: 
+        prospectus_id: UUID string of the Prospectus object
         doc_type: the type of the PDF file, could be either supplement or prospectus. Normally can be found in the file name.
 
     Returns:
         List of index page numbers
     """
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+
     if prospectus.index_page_numbers:
         return prospectus.index_page_numbers
     keywords = ["table of contents", "index"]
@@ -243,17 +248,18 @@ def retrieve_parsed_pages_from_db(prospectus: Prospectus, page_numbers: List[int
         raise
 
 @tool
-def convert_pages_to_images(prospectus: Prospectus, page_numbers: List[int]) -> List[Dict]:
+def convert_pages_to_images(prospectus_id: str, page_numbers: List[int]) -> List[Dict]:
     """
     convert PDF pages to images, so it can be fed to openai vision to further parse
 
     Args:
-        prospectus: Prospectus object
+        prospectus_id: Prospectus ID
         page_numbers: the page number of the pages which needed to be parsed
 
     Returns:
         List of page images
     """
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     doc = fitz.open(prospectus.prospectus_file.path)
     images = []
 
@@ -272,21 +278,22 @@ def convert_pages_to_images(prospectus: Prospectus, page_numbers: List[int]) -> 
     return images
 
 @tool
-def parse_page_images_with_openai(page_images: List[Dict], build_prompt: Callable) -> Dict:
+def parse_page_images_with_openai(page_images: List[Dict], is_index: bool) -> Dict:
     """
     Parse PDF pages images using openai vision
 
     Args:
         page_images: images converted from PDF pages
-        build_prompt: function used to create user prompt to feed llm
+        is_index: if current page_images are index pages or not
 
     Returns:
         List of parsed page elements with text, metadata, and structure
     """
+    content = build_prompt_for_index_parsing(page_images) if is_index else build_prompt_for_parsing_pages_with_table(page_images)
     messages = [
         {
             'role': 'user',
-            'content': build_prompt(page_images)
+            'content': content
         }
     ]
     response = llm_client.chat.completions.create(
@@ -296,7 +303,6 @@ def parse_page_images_with_openai(page_images: List[Dict], build_prompt: Callabl
     content = response.choices[0].message.content
     return extract_json(content)
 
-@tool
 def build_prompt_for_index_parsing(images:List[Dict]) -> List[Dict]:
     """
     Parse PDF index page images using openai vision
@@ -417,7 +423,7 @@ def extract_json(content: str) -> Dict:
         raise ValueError(f"Could not extract JSON from response: {content[:200]}")
 
 @tool
-def parse_prospectus_with_parsed_index(prospectus: Prospectus) -> Dict:
+def parse_prospectus_with_parsed_index(prospectus_id: str) -> Dict:
     """
     Parse the full prospectus using the parsed index structure as a guide.
 
@@ -426,11 +432,12 @@ def parse_prospectus_with_parsed_index(prospectus: Prospectus) -> Dict:
     because the stateful iteration logic is too complex for the agent to manage manually.
 
     Args:
-        prospectus: Prospectus object with parsed_index already populated
+        prospectus_id: Prospectus ID with parsed_index already populated
 
     Returns:
         Complete parsed prospectus structure with all sections filled in
     """
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     index = prospectus.parsed_index
     # go through each level 1 section
     for i, parent_section in enumerate(index['sections']):
@@ -473,7 +480,7 @@ def parse_prospectus_with_parsed_index(prospectus: Prospectus) -> Dict:
                 has_table = any(element.category == 'Table' for element in elements)
                 if has_table:
                     page_image = convert_pages_to_images(prospectus, [page_number])
-                    page_sections = parse_page_images_with_openai(page_image, build_prompt_for_parsing_pages_with_table)
+                    page_sections = parse_page_images_with_openai(page_image, False)
                     add_page_number_to_parsed_sections(page_sections, page_number)
                 else:
                     page_sections = extract_sections(elements, page_number)

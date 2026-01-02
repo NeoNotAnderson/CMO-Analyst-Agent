@@ -22,33 +22,60 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [error, setError] = useState<string>('');
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    /**
-     * TODO: Implement file upload logic
-     *
-     * Steps:
-     * 1. Get the first file from acceptedFiles
-     * 2. Validate the file using validatePdfFile()
-     * 3. If valid, call uploadProspectus(file)
-     * 4. Show upload progress
-     * 5. Start polling getProspectusStatus() to track parsing progress
-     * 6. When status is 'completed', call onUploadComplete()
-     * 7. Handle errors appropriately
-     *
-     * Example polling logic:
-     * const pollStatus = async (prospectusId: string) => {
-     *   const interval = setInterval(async () => {
-     *     const { status } = await getProspectusStatus(prospectusId);
-     *     setUploadStatus(status);
-     *     if (status === 'completed' || status === 'failed') {
-     *       clearInterval(interval);
-     *       if (status === 'completed') {
-     *         onUploadComplete?.(prospectusId);
-     *       }
-     *     }
-     *   }, 2000); // Poll every 2 seconds
-     * };
-     */
-    console.log('TODO: Implement file upload:', acceptedFiles);
+    // Get the first file
+    if (acceptedFiles.length === 0) {
+      setError('No file selected');
+      return;
+    }
+
+    const file = acceptedFiles[0];
+
+    // Validate PDF file
+    const validationError = validatePdfFile(file);
+    if (validationError.error) {
+      setError(validationError.error);
+      return;
+    }
+
+    // Reset error and start upload
+    setError('');
+    setIsUploading(true);
+    setUploadStatus('uploading');
+
+    try {
+      // Upload file to backend
+      const response = await uploadProspectus(file);
+      const prospectusId = response.prospectus_id;
+
+      // Start polling for parsing status
+      setUploadStatus('parsing');
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const { status } = await getProspectusStatus(prospectusId);
+          setUploadStatus(status);
+
+          if (status === 'completed') {
+            clearInterval(pollInterval);
+            setIsUploading(false);
+            onUploadComplete?.(prospectusId);
+          } else if (status === 'failed') {
+            clearInterval(pollInterval);
+            setIsUploading(false);
+            setError('Parsing failed. Please try again.');
+          }
+        } catch (err) {
+          clearInterval(pollInterval);
+          setIsUploading(false);
+          setError('Failed to check parsing status');
+        }
+      }, 2000); // Poll every 2 seconds
+
+    } catch (err) {
+      setIsUploading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMessage);
+    }
   }, [onUploadComplete]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

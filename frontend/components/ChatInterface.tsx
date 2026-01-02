@@ -27,50 +27,40 @@ export default function ChatInterface() {
 
   const loadChatHistory = async (prospectusId: string) => {
     /**
-     * TODO: Implement load chat history
-     *
      * Steps:
      * 1. Call getChatHistory(prospectusId)
      * 2. Set messages state with history
      * 3. Handle errors
      *
-     * Example:
-     * try {
-     *   const { messages } = await getChatHistory(prospectusId);
-     *   setMessages(messages);
-     * } catch (error) {
-     *   console.error('Failed to load history:', error);
-     * }
      */
-    console.log('TODO: Load chat history for:', prospectusId);
+    try {
+      const response = await getChatHistory(prospectusId);
+      setMessages(prev => [...prev, ...response.messages]);
+    } catch (error){
+      console.error('failed to get chat history', error);
+    }
   };
 
   const handleUploadComplete = (prospectusId: string) => {
     /**
-     * TODO: Implement upload complete handler
-     *
      * Steps:
      * 1. Set currentProspectusId to the uploaded prospectus
      * 2. Add a system message to chat: "Prospectus uploaded and parsed successfully. You can now ask questions."
      * 3. Load chat history (if any)
-     *
-     * Example:
-     * setCurrentProspectusId(prospectusId);
-     * const systemMessage: ChatMessage = {
-     *   id: Date.now().toString(),
-     *   role: 'system',
-     *   content: 'Prospectus uploaded and parsed successfully. You can now ask questions.',
-     *   timestamp: new Date().toISOString()
-     * };
-     * setMessages([systemMessage]);
      */
-    console.log('TODO: Handle upload complete:', prospectusId);
+    
+    const systemMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'system',
+      content: 'Prospectus uploaded and parsed successfully. You can now ask questions.',
+      timestamp: new Date().toISOString()
+    };
+    setMessages([systemMessage]);
+    setCurrentProspectusId(prospectusId);
   };
 
   const handleSendMessage = async (messageText: string) => {
     /**
-     * TODO: Implement send message handler
-     *
      * Steps:
      * 1. Check if currentProspectusId exists
      * 2. Add user message to messages state
@@ -79,33 +69,29 @@ export default function ChatInterface() {
      * 5. Add agent response to messages state
      * 6. Set isLoading to false
      * 7. Handle errors
-     *
-     * Example:
-     * if (!currentProspectusId) {
-     *   alert('Please upload a prospectus first');
-     *   return;
-     * }
-     *
-     * const userMessage: ChatMessage = {
-     *   id: Date.now().toString(),
-     *   role: 'user',
-     *   content: messageText,
-     *   timestamp: new Date().toISOString(),
-     *   prospectus_id: currentProspectusId
-     * };
-     * setMessages(prev => [...prev, userMessage]);
-     *
-     * setIsLoading(true);
-     * try {
-     *   const agentResponse = await sendChatMessage(currentProspectusId, messageText);
-     *   setMessages(prev => [...prev, agentResponse]);
-     * } catch (error) {
-     *   console.error('Failed to send message:', error);
-     * } finally {
-     *   setIsLoading(false);
-     * }
      */
-    console.log('TODO: Send message:', messageText);
+    if (!currentProspectusId) {
+      alert('Please upload a prospectus first');
+      return;
+    }
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: messageText,
+      timestamp: new Date().toISOString(),
+      prospectus_id: currentProspectusId
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+    try {
+      const response = await sendChatMessage(currentProspectusId, messageText);
+      setMessages(prev => [...prev, response])
+    } catch (error) {
+      console.error('failed to send message', error)
+    } finally {
+      setIsLoading(false);
+    }
+    
   };
 
   return (

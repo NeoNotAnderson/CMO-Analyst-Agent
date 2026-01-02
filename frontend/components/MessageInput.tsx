@@ -19,28 +19,22 @@ export default function MessageInput({ onSendMessage, disabled, placeholder }: M
 
   const handleSend = () => {
     /**
-     * TODO: Implement send message logic
-     *
      * Steps:
      * 1. Trim the message
      * 2. Check if message is not empty
      * 3. Call onSendMessage(message)
      * 4. Clear the input field
      *
-     * Example:
-     * const trimmed = message.trim();
-     * if (trimmed) {
-     *   onSendMessage(trimmed);
-     *   setMessage('');
-     * }
-     */
-    console.log('TODO: Implement send message:', message);
+    **/
+    const userInput = message.trim();
+    if (userInput) {
+      onSendMessage(userInput);
+      setMessage('');
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     /**
-     * TODO: Handle Enter key to send message
-     *
      * Allow Shift+Enter for new line
      * Enter alone sends the message
      *
@@ -50,6 +44,10 @@ export default function MessageInput({ onSendMessage, disabled, placeholder }: M
      *   handleSend();
      * }
      */
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (

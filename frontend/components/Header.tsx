@@ -16,20 +16,15 @@ interface HeaderProps {
 
 export default function Header({ showLogout, username }: HeaderProps) {
   const router = useRouter();
-
   const handleLogout = async () => {
-    /**
-     * TODO: Implement logout logic
-     *
-     * Steps:
-     * 1. Call logout() from API client
-     * 2. Redirect to home page
-     *
-     * Example:
-     * await logout();
-     * router.push('/');
-     */
-    console.log('TODO: Implement logout');
+    try {
+      await logout();
+    }
+    catch (error) {
+      console.error('logout failed:', error);
+    } finally {
+      router.push('/');
+    }
   };
 
   return (

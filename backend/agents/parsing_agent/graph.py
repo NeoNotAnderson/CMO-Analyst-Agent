@@ -51,21 +51,25 @@ def create_parsing_graph():
 
 def run_agent(prospectus: Prospectus):
     system_message = SystemMessage(content=
-        """
+        f"""
         You are a financial document parsing assistant specialized in CMO prospectuses.
 
         Your task is to parse the prospectus and save all structured information to the database.
 
+        The prospectus ID is: {prospectus.prospectus_id}
+        The prospectus name is: {prospectus.prospectus_name}
+
         Available tools allow you to:
-        - Check if parsing is already complete
-        - Parse index pages to understand document structure  
+        - Check if parsing is already complete (use prospectus_id)
+        - Parse index pages to understand document structure
         - Parse individual sections and pages
-        - Save results to database
+        - Save results to database (use prospectus_id)
 
         Think step by step and use the appropriate tools to complete the parsing task.
+        Use the prospectus_id when calling tools that require it.
         """)
-    
-    user_message = HumanMessage(content=f"Here is the CMO prospectus: {prospectus.prospectus_name}, parsing is consist of two steps, you need to first parse the index, from which you can get the file strcuture. After that, parse the rest of the file based on the parsed index. Use the tools provided and save the result to database.")
+
+    user_message = HumanMessage(content=f"Parse the CMO prospectus with ID {prospectus.prospectus_id}. Parsing consists of two steps: first parse the index to get the file structure, then parse the rest based on the index. Use the tools provided and save results to database.")
     state = {
         'prospectus': prospectus,
         'messages': [system_message, user_message],
