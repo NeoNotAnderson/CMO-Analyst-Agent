@@ -12,14 +12,12 @@ from dotenv import load_dotenv
 import os
 from .tools import (
     check_parsed_index_exists,
-    save_parsed_index_to_db,
     parse_prospectus_with_parsed_index,
     classify_sections_with_llm,
     determin_doc_type,
     find_index_pages,
     convert_pages_to_images,
-    parse_page_images_with_openai,
-    build_prompt_for_index_parsing
+    parse_page_images_with_openai
 )
 
 load_dotenv()
@@ -29,14 +27,13 @@ llm = ChatOpenAI(model='gpt-5-nano', api_key=api_key)
 # Mix of granular tools and one complex orchestration tool (parse_prospectus_with_parsed_index)
 TOOLS = [
     check_parsed_index_exists,
-    save_parsed_index_to_db,
     parse_prospectus_with_parsed_index,
     classify_sections_with_llm,
     determin_doc_type,
     find_index_pages,
     convert_pages_to_images,
-    parse_page_images_with_openai,
-    build_prompt_for_index_parsing
+    parse_page_images_with_openai
+    # Note: save_parsed_index_to_db is now a helper function (not a tool)
 ]
 llm_with_tools = llm.bind_tools(TOOLS)
 
@@ -57,7 +54,17 @@ def agent_node(state: ParsingState) -> ParsingState:
         Updated state with agent's response and tool calls
     """
     messages = state['messages']
+    print(f"\n[AGENT NODE] Calling LLM with {len(messages)} messages")
     response = llm_with_tools.invoke(messages)
+
+    # Debug tool calls
+    if hasattr(response, 'tool_calls') and response.tool_calls:
+        print(f"[AGENT NODE] LLM requested {len(response.tool_calls)} tool call(s):")
+        for i, tool_call in enumerate(response.tool_calls):
+            print(f"  {i+1}. {tool_call['name']}")
+    else:
+        print(f"[AGENT NODE] No tool calls in response")
+
     return {'messages': [response]}
 
 def should_continue(state: ParsingState) -> str:

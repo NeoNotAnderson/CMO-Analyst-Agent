@@ -49,7 +49,18 @@ def create_parsing_graph():
     app = workflow.compile()
     return app
 
-def run_agent(prospectus: Prospectus):
+def run_agent(prospectus: Prospectus, config=None):
+    """
+    Run the parsing agent on a prospectus.
+
+    Args:
+        prospectus: Prospectus object to parse
+        config: Optional config dict for callbacks, etc.
+                Example: {"callbacks": [callback_handler]}
+
+    Returns:
+        Final state after agent execution
+    """
     system_message = SystemMessage(content=
         f"""
         You are a financial document parsing assistant specialized in CMO prospectuses.
@@ -65,6 +76,11 @@ def run_agent(prospectus: Prospectus):
         - Parse individual sections and pages
         - Save results to database (use prospectus_id)
 
+        IMPORTANT CONSTRAINTS:
+        - When converting pages to images, ONLY convert 1-2 pages at a time (maximum)
+        - When parsing images with OpenAI, ONLY send 1-2 pages at a time
+        - Processing too many pages at once will exceed token limits
+
         Think step by step and use the appropriate tools to complete the parsing task.
         Use the prospectus_id when calling tools that require it.
         """)
@@ -76,4 +92,4 @@ def run_agent(prospectus: Prospectus):
         'errors': []
     }
     agent = create_parsing_graph()
-    return agent.invoke(state)
+    return agent.invoke(state, config=config)

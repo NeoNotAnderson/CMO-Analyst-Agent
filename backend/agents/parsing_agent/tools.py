@@ -34,10 +34,22 @@ def check_parsed_index_exists(prospectus_id: str) -> bool:
     Returns:
         True if parsed_index exists and is not empty, False otherwise
     """
-    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
-    return prospectus.parsed_index is not None and len(prospectus.parsed_index) > 0
+    print(f"[DEBUG] check_parsed_index_exists called with: {prospectus_id} (type: {type(prospectus_id)})")
 
-@tool
+    try:
+        # Try to find all prospectuses for debugging
+        all_prospectuses = Prospectus.objects.all()
+        print(f"[DEBUG] Total prospectuses in DB: {all_prospectuses.count()}")
+        for p in all_prospectuses:
+            print(f"[DEBUG]   - ID: {p.prospectus_id} (type: {type(p.prospectus_id)}), Name: {p.prospectus_name}")
+
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+        print(f"[DEBUG] Found prospectus: {prospectus.prospectus_name}")
+        return prospectus.parsed_index is not None and len(prospectus.parsed_index) > 0
+    except Prospectus.DoesNotExist:
+        print(f'[ERROR] Prospectus with id {prospectus_id} does not exist')
+        return False
+    
 def save_parsed_index_to_db(prospectus_id: str, parsed_index: Dict) -> None:
     """
     Save parsed index to the database.
@@ -248,46 +260,215 @@ def retrieve_parsed_pages_from_db(prospectus: Prospectus, page_numbers: List[int
         raise
 
 @tool
-def convert_pages_to_images(prospectus_id: str, page_numbers: List[int]) -> List[Dict]:
+def convert_pages_to_images(prospectus_id: str, page_numbers: List[int]) -> str:
     """
-    convert PDF pages to images, so it can be fed to openai vision to further parse
+    Convert PDF pages to images and store them in the prospectus object.
+
+    IMPORTANT: This tool does NOT return the images (too large for tool results).
+    Instead, it stores them in the prospectus.metadata['temp_images'] field.
+    Use parse_page_images_with_openai to parse them.
 
     Args:
         prospectus_id: Prospectus ID
         page_numbers: the page number of the pages which needed to be parsed
 
     Returns:
-        List of page images
+        Success message with page numbers converted
     """
+    from PIL import Image
+    import io
+
+    # Hard limit to prevent token overflow
+    if len(page_numbers) > 2:
+        raise ValueError(
+            f"Too many pages requested: {len(page_numbers)}. "
+            f"Maximum is 2 pages at a time to avoid exceeding token limits. "
+            f"Please convert pages in smaller batches."
+        )
+
     prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     doc = fitz.open(prospectus.prospectus_file.path)
     images = []
 
     for page_num in page_numbers:
         page = doc[page_num]
-        pix = page.get_pixmap(dpi=200)
-        img_bytes = pix.tobytes("png")
+        # Use DPI=72 (standard screen resolution) to minimize token usage
+        pix = page.get_pixmap(dpi=72)
+
+        # Convert through PIL to ensure valid format
+        img_data = pix.tobytes("ppm")
+        pil_image = Image.open(io.BytesIO(img_data))
+
+        # Save as PNG
+        buffer = io.BytesIO()
+        pil_image.save(buffer, format='PNG', optimize=False)
+        img_bytes = buffer.getvalue()
+
+        # Verify the image is valid
+        Image.open(io.BytesIO(img_bytes)).verify()
+
         img_base64 = base64.b64encode(img_bytes).decode('utf-8')
-        images.append(
-            {
-                'page_num': page_num,
-                'image': img_base64
-            }
-        )
+
+        # Log image size
+        img_size_kb = len(img_base64) / 1024
+        print(f"[DEBUG] Page {page_num}: {img_size_kb:.1f} KB (base64), {len(img_base64)} chars")
+
+        images.append({
+            'page_num': page_num,
+            'image': img_base64
+        })
     doc.close()
+
+    # Store images in prospectus metadata (not returned through tool result)
+    if not prospectus.metadata:
+        prospectus.metadata = {}
+    prospectus.metadata['temp_images'] = images
+    prospectus.save()
+
+    total_size_mb = sum(len(img['image']) for img in images) / (1024 * 1024)
+    print(f"[DEBUG] Stored {len(images)} images in prospectus metadata: {total_size_mb:.2f} MB")
+
+    return f"Successfully converted {len(page_numbers)} pages to images: {page_numbers}. Images stored in prospectus metadata."
+
+def convert_pages_to_images_direct(prospectus: Prospectus, page_numbers: List[int]) -> List[Dict]:
+    """
+    Helper function (NOT a tool) to convert pages to images and return them directly.
+    Used by parse_prospectus_with_parsed_index which is not agent-driven.
+
+    Args:
+        prospectus: Prospectus object
+        page_numbers: List of page numbers to convert
+
+    Returns:
+        List of image dictionaries with 'page_num' and 'image' (base64) keys
+    """
+    from PIL import Image
+    import io
+
+    doc = fitz.open(prospectus.prospectus_file.path)
+    images = []
+
+    for page_num in page_numbers:
+        page = doc[page_num]
+        pix = page.get_pixmap(dpi=72)
+
+        # Convert through PIL
+        img_data = pix.tobytes("ppm")
+        pil_image = Image.open(io.BytesIO(img_data))
+
+        # Save as PNG
+        buffer = io.BytesIO()
+        pil_image.save(buffer, format='PNG', optimize=False)
+        img_bytes = buffer.getvalue()
+
+        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+
+        images.append({
+            'page_num': page_num,
+            'image': img_base64
+        })
+    doc.close()
+
     return images
 
 @tool
-def parse_page_images_with_openai(page_images: List[Dict], is_index: bool) -> Dict:
+def parse_page_images_with_openai(prospectus_id: str, is_index: bool) -> str:
     """
-    Parse PDF pages images using openai vision
+    Parse and save PDF pages images using OpenAI vision.
+
+    Retrieves images from prospectus.metadata['temp_images'] that were stored
+    by convert_pages_to_images tool. Parses with OpenAI and saves directly
+    to database to avoid LangChain truncating large return values.
 
     Args:
-        page_images: images converted from PDF pages
+        prospectus_id: Prospectus ID to retrieve images from
         is_index: if current page_images are index pages or not
 
     Returns:
-        List of parsed page elements with text, metadata, and structure
+        Success message (parsed data is saved to DB, not returned)
+    """
+    print(f"\n{'='*60}")
+    print(f"[TOOL ENTRY] parse_page_images_with_openai called")
+    print(f"[TOOL ENTRY] prospectus_id: {prospectus_id}")
+    print(f"[TOOL ENTRY] is_index: {is_index}")
+    print(f"{'='*60}\n")
+
+    # Retrieve images from prospectus metadata
+    prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+
+    if not prospectus.metadata or 'temp_images' not in prospectus.metadata:
+        raise ValueError("No images found in prospectus metadata. Call convert_pages_to_images first.")
+
+    page_images = prospectus.metadata['temp_images']
+    print(f"[DEBUG] Retrieved {len(page_images)} images from prospectus metadata")
+
+    # Verify image data integrity
+    for i, img_dict in enumerate(page_images):
+        img_b64 = img_dict['image']
+        print(f"[VERIFY] Image {i}: Length={len(img_b64)} chars")
+
+        # Verify it's valid
+        try:
+            import io
+            from PIL import Image
+            img_bytes = base64.b64decode(img_b64)
+            Image.open(io.BytesIO(img_bytes)).verify()
+            print(f"[VERIFY] Image {i}: Valid ✓")
+        except Exception as e:
+            print(f"[ERROR] Image {i}: Invalid: {e}")
+            raise ValueError(f"Image {i} is corrupted: {e}")
+
+    print(f"[DEBUG] Building prompt content...")
+    content = build_prompt_for_index_parsing(page_images) if is_index else build_prompt_for_parsing_pages_with_table(page_images)
+    print(f"[DEBUG] Prompt content built")
+    messages = [
+        {
+            'role': 'user',
+            'content': content
+        }
+    ]
+
+    try:
+        response = llm_client.chat.completions.create(
+            model='gpt-5-nano',
+            messages = messages
+        )
+        content = response.choices[0].message.content
+        parsed_pages = extract_json(content)
+        if is_index:
+            add_page_number_to_parsed_index(parsed_pages)
+            prospectus.parsed_index = parsed_pages
+            prospectus.save()
+            num_sections = len(parsed_pages.get('sections', []))
+            print(f"[SUCCESS] Parsed and saved index with {num_sections} sections")
+            return f"Successfully parsed and saved index pages with {num_sections} top-level sections to database."
+        else:
+            if not prospectus.metadata:
+                prospectus.metadata = {}
+            prospectus.metadata['temp_parsed_pages'] = parsed_pages
+            prospectus.save()
+            num_sections = len(parsed_pages) if isinstance(parsed_pages, list) else 0
+            print(f"[SUCCESS] Parsed and saved {num_sections} page sections")
+            return f"Successfully parsed and saved {num_sections} page sections to database."
+
+    except Exception as e:
+        if "context_length_exceeded" in str(e):
+            print(f"[ERROR] Token limit exceeded with {len(page_images)} pages")
+            print(f"[ERROR] Image sizes: {[len(img['image'])/1024 for img in page_images]} KB")
+            raise ValueError(f"Too many tokens. Try parsing fewer pages at once (currently {len(page_images)} pages)")
+        raise
+
+def parse_page_images_with_openai_direct(page_images: List[Dict], is_index: bool) -> Dict:
+    """
+    Helper function (NOT a tool) to parse images directly without agent.
+    Used by parse_prospectus_with_parsed_index.
+
+    Args:
+        page_images: List of image dicts with 'page_num' and 'image' keys
+        is_index: Whether parsing index pages
+
+    Returns:
+        Parsed structure
     """
     content = build_prompt_for_index_parsing(page_images) if is_index else build_prompt_for_parsing_pages_with_table(page_images)
     messages = [
@@ -296,12 +477,18 @@ def parse_page_images_with_openai(page_images: List[Dict], is_index: bool) -> Di
             'content': content
         }
     ]
-    response = llm_client.chat.completions.create(
-        model='gpt-5-nano',
-        messages = messages
-    )
-    content = response.choices[0].message.content
-    return extract_json(content)
+
+    try:
+        response = llm_client.chat.completions.create(
+            model='gpt-5-nano',
+            messages=messages
+        )
+        content = response.choices[0].message.content
+        return extract_json(content)
+    except Exception as e:
+        if "context_length_exceeded" in str(e):
+            raise ValueError(f"Token limit exceeded with {len(page_images)} pages")
+        raise
 
 def build_prompt_for_index_parsing(images:List[Dict]) -> List[Dict]:
     """
@@ -423,7 +610,7 @@ def extract_json(content: str) -> Dict:
         raise ValueError(f"Could not extract JSON from response: {content[:200]}")
 
 @tool
-def parse_prospectus_with_parsed_index(prospectus_id: str) -> Dict:
+def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
     """
     Parse the full prospectus using the parsed index structure as a guide.
 
@@ -431,11 +618,13 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> Dict:
     It uses granular helper tools internally but the agent should call this as a single operation
     because the stateful iteration logic is too complex for the agent to manage manually.
 
+    Saves the parsed prospectus to database instead of returning it to avoid truncation.
+
     Args:
         prospectus_id: Prospectus ID with parsed_index already populated
 
     Returns:
-        Complete parsed prospectus structure with all sections filled in
+        Success message indicating parsing is complete
     """
     prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     index = prospectus.parsed_index
@@ -479,8 +668,8 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> Dict:
                 #check if file contains table:
                 has_table = any(element.category == 'Table' for element in elements)
                 if has_table:
-                    page_image = convert_pages_to_images(prospectus, [page_number])
-                    page_sections = parse_page_images_with_openai(page_image, False)
+                    page_image = convert_pages_to_images_direct(prospectus, [page_number])
+                    page_sections = parse_page_images_with_openai_direct(page_image, False)
                     add_page_number_to_parsed_sections(page_sections, page_number)
                 else:
                     page_sections = extract_sections(elements, page_number)
@@ -498,8 +687,10 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> Dict:
         doc.close()
     prospectus.parsed_file = index
     prospectus.save()
-    
-    return index
+
+    num_sections = len(index.get('sections', []))
+    print(f"[SUCCESS] Parsed and saved full prospectus with {num_sections} top-level sections")
+    return f"Successfully parsed and saved full prospectus with {num_sections} top-level sections to database."
 
 def add_page_number_to_parsed_sections(page_sections: List[Dict], page_number: int) -> List[Dict]:
     """
