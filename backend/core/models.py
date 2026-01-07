@@ -35,7 +35,6 @@ class Prospectus(models.Model):
         PARSING_INDEX = 'parsing_index', 'Parsing Index'
         PARSING_SECTIONS = 'parsing_sections', 'Parsing Sections'
         CLASSIFYING = 'classifying', 'Classifying'
-        STORING = 'storing', 'Storing'
         COMPLETED = 'completed', 'Completed'
         FAILED = 'failed', 'Failed'
 
@@ -59,6 +58,12 @@ class Prospectus(models.Model):
     class Meta:
         db_table = 'prospectus'
         ordering = ['-upload_date']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prospectus_name', 'created_by'],
+                name='unique_prospectus_per_user'
+            )
+        ]
 
     def __str__(self):
         return f"{self.prospectus_name}"

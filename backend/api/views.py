@@ -129,6 +129,7 @@ def upload_prospectus(request):
 
     Expected Request:
     FormData with 'file' field containing PDF
+    Optional 'overwrite' field (boolean) if confirming overwrite
 
     Expected Response:
     {
@@ -136,6 +137,12 @@ def upload_prospectus(request):
         "prospectus_name": "filename.pdf",
         "status": "pending",
         "message": "Upload successful, parsing started"
+    }
+    OR if duplicate found:
+    {
+        "duplicate": true,
+        "prospectus_name": "filename.pdf",
+        "message": "A prospectus with this name already exists. Overwrite?"
     }
     """
     # Validate file exists in request
@@ -153,21 +160,54 @@ def upload_prospectus(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Create Prospectus object
-    prospectus = Prospectus.objects.create(
+    # Check if prospectus with same name already exists for this user
+    existing_prospectus = Prospectus.objects.filter(
         prospectus_name=file.name,
-        prospectus_file=file,
-        created_by=request.user,
-        parse_status='pending'
-    )
+        created_by=request.user
+    ).first()
 
+    # Get user's choice: 'use_existing' or leave empty for prompt
+    use_existing = request.data.get('use_existing', 'false').lower() == 'true'
+
+    if existing_prospectus and not use_existing:
+        # Duplicate found, ask user what to do
+        return Response(
+            {
+                'duplicate': True,
+                'prospectus_id': str(existing_prospectus.prospectus_id),
+                'prospectus_name': file.name,
+                'parse_status': existing_prospectus.parse_status,
+                'message': 'A prospectus with this name already exists. Do you want to use the existing one?'
+            },
+            status=status.HTTP_409_CONFLICT
+        )
+
+    # Determine which prospectus to use
+    if existing_prospectus and use_existing:
+        # User chose to use existing prospectus
+        prospectus = existing_prospectus
+        message = 'Using existing prospectus, re-parsing in background'
+    else:
+        # Create new Prospectus object (no existing file or user uploaded different file)
+        prospectus = Prospectus.objects.create(
+            prospectus_name=file.name,
+            prospectus_file=file,
+            created_by=request.user,
+            parse_status='pending'
+        )
+        message = 'Upload successful, parsing started in background'
+
+    # Parse in background for both existing and new prospectuses
     def parse_in_background():
         try:
+            prospectus.parse_status = 'parsing_index'
+            prospectus.save()
             run_agent(prospectus)
         except Exception as e:
             prospectus.parse_status = 'failed'
             prospectus.save()
-    
+            print(f"[ERROR] Parsing failed: {e}")
+
     thread = threading.Thread(target=parse_in_background)
     thread.daemon = True
     thread.start()
@@ -176,7 +216,7 @@ def upload_prospectus(request):
         'prospectus_id': str(prospectus.prospectus_id),
         'prospectus_name': prospectus.prospectus_name,
         'status': prospectus.parse_status,
-        'message': 'Upload successful, parsing will start when agent is implemented'
+        'message': message
     }, status=status.HTTP_201_CREATED)
 
 

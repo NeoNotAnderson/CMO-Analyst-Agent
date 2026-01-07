@@ -438,9 +438,11 @@ def parse_page_images_with_openai(prospectus_id: str, is_index: bool) -> str:
         if is_index:
             add_page_number_to_parsed_index(parsed_pages)
             prospectus.parsed_index = parsed_pages
+            prospectus.parse_status = 'parsing_index'
             prospectus.save()
             num_sections = len(parsed_pages.get('sections', []))
             print(f"[SUCCESS] Parsed and saved index with {num_sections} sections")
+            print(f"[STATUS] Updated parse_status to: parsing_index")
             return f"Successfully parsed and saved index pages with {num_sections} top-level sections to database."
         else:
             if not prospectus.metadata:
@@ -452,6 +454,10 @@ def parse_page_images_with_openai(prospectus_id: str, is_index: bool) -> str:
             return f"Successfully parsed and saved {num_sections} page sections to database."
 
     except Exception as e:
+        prospectus.parse_status = 'failed'
+        prospectus.save()
+        print(f"[STATUS] Updated parse_status to: failed")
+
         if "context_length_exceeded" in str(e):
             print(f"[ERROR] Token limit exceeded with {len(page_images)} pages")
             print(f"[ERROR] Image sizes: {[len(img['image'])/1024 for img in page_images]} KB")
@@ -627,70 +633,87 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
         Success message indicating parsing is complete
     """
     prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
-    index = prospectus.parsed_index
-    # go through each level 1 section
-    for i, parent_section in enumerate(index['sections']):
-        #first page is index, so the starting page and ending page for each section is offset by 1. so no need to subtract by one
-        starting_page = int(parent_section['page_num'])
-        doc = fitz.open(prospectus.prospectus_file.path)
-        ending_page = len(doc)
-        next_index_section_title = ""
-        if i < len(index['sections']) - 1:
-            next_section = index['sections'][i+1]
-            ending_page = int(next_section['page_num'])
-            next_index_section_title = next_section['title']
-        if ending_page > len(doc):
-            break
-        pos = -1
-        last_processed_section = None
 
-        for page_number in range(starting_page, ending_page+1):
-            page_sections = []
-            if not parsed_pages_exist_in_db([page_number], prospectus):
-                #extract single page to temporary pdf
-                page_doc = fitz.open()
-                page_doc.insert_pdf(doc, from_page=page_number, to_page=page_number)
+    try:
+        # Update status to parsing_sections at the start
+        prospectus.parse_status = 'parsing_sections'
+        prospectus.save()
+        print(f"[STATUS] Updated parse_status to: parsing_sections")
 
-                #save to temp file
-                temp_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
-                page_doc.save(temp_file.name)
-                page_doc.close()
+        index = prospectus.parsed_index
+        # go through each level 1 section
+        for i, parent_section in enumerate(index['sections']):
+            #first page is index, so the starting page and ending page for each section is offset by 1. so no need to subtract by one
+            starting_page = int(parent_section['page_num'])
+            doc = fitz.open(prospectus.prospectus_file.path)
+            ending_page = len(doc)
+            next_index_section_title = ""
+            if i < len(index['sections']) - 1:
+                next_section = index['sections'][i+1]
+                ending_page = int(next_section['page_num'])
+                next_index_section_title = next_section['title']
+            if ending_page > len(doc):
+                break
+            pos = -1
+            last_processed_section = None
 
-                #parse with unstructured
-                elements = partition_pdf(
-                    filename=temp_file.name,
-                    strategy='hi_res',
-                    infer_table_structure=True
-                )
-                #clean up temp file
-                os.unlink(temp_file.name)
+            for page_number in range(starting_page, ending_page+1):
+                page_sections = []
+                if not parsed_pages_exist_in_db([page_number], prospectus):
+                    #extract single page to temporary pdf
+                    page_doc = fitz.open()
+                    page_doc.insert_pdf(doc, from_page=page_number, to_page=page_number)
 
-                #check if file contains table:
-                has_table = any(element.category == 'Table' for element in elements)
-                if has_table:
-                    page_image = convert_pages_to_images_direct(prospectus, [page_number])
-                    page_sections = parse_page_images_with_openai_direct(page_image, False)
-                    add_page_number_to_parsed_sections(page_sections, page_number)
+                    #save to temp file
+                    temp_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+                    page_doc.save(temp_file.name)
+                    page_doc.close()
+
+                    #parse with unstructured
+                    elements = partition_pdf(
+                        filename=temp_file.name,
+                        strategy='hi_res',
+                        infer_table_structure=True
+                    )
+                    #clean up temp file
+                    os.unlink(temp_file.name)
+
+                    #check if file contains table:
+                    has_table = any(element.category == 'Table' for element in elements)
+                    if has_table:
+                        page_image = convert_pages_to_images_direct(prospectus, [page_number])
+                        page_sections = parse_page_images_with_openai_direct(page_image, False)
+                        add_page_number_to_parsed_sections(page_sections, page_number)
+                    else:
+                        page_sections = extract_sections(elements, page_number)
+                    
+                    # save parsed page:
+                    store_parsed_pages_in_db(prospectus, [page_number], [page_sections])
                 else:
-                    page_sections = extract_sections(elements, page_number)
-                
-                # save parsed page:
-                store_parsed_pages_in_db(prospectus, [page_number], [page_sections])
-            else:
-                # Retrieve already parsed page from database
-                # parsed_pages is a list of lists, each sublist is a page with sections
-                for page in prospectus.parsed_pages:
-                    if isinstance(page, list) and len(page) > 0 and page[0].get('page_num') == page_number:
-                        page_sections = page  # page is already a list of dictionaries
-                        break
-            pos, last_processed_section = combine_sections(parent_section, next_index_section_title, page_sections, pos, last_processed_section)
-        doc.close()
-    prospectus.parsed_file = index
-    prospectus.save()
+                    # Retrieve already parsed page from database
+                    # parsed_pages is a list of lists, each sublist is a page with sections
+                    for page in prospectus.parsed_pages:
+                        if isinstance(page, list) and len(page) > 0 and page[0].get('page_num') == page_number:
+                            page_sections = page  # page is already a list of dictionaries
+                            break
+                pos, last_processed_section = combine_sections(parent_section, next_index_section_title, page_sections, pos, last_processed_section)
+            doc.close()
 
-    num_sections = len(index.get('sections', []))
-    print(f"[SUCCESS] Parsed and saved full prospectus with {num_sections} top-level sections")
-    return f"Successfully parsed and saved full prospectus with {num_sections} top-level sections to database."
+        prospectus.parsed_file = index
+        prospectus.parse_status = 'completed'
+        prospectus.save()
+
+        num_sections = len(index.get('sections', []))
+        print(f"[SUCCESS] Parsed and saved full prospectus with {num_sections} top-level sections")
+        print(f"[STATUS] Updated parse_status to: completed")
+        return f"Successfully parsed and saved full prospectus with {num_sections} top-level sections to database."
+
+    except Exception as e:
+        prospectus.parse_status = 'failed'
+        prospectus.save()
+        print(f"[ERROR] Parsing failed: {e}")
+        print(f"[STATUS] Updated parse_status to: failed")
+        raise
 
 def add_page_number_to_parsed_sections(page_sections: List[Dict], page_number: int) -> List[Dict]:
     """
