@@ -213,8 +213,7 @@ def get_category_mappings(category: SectionCategory) -> List[SectionMapping]:
     Returns:
         List of SectionMapping objects for the category
     """
-    # TODO: Implement filtering logic
-    pass
+    return [mapping for mapping in SECTION_MAPPINGS if mapping.category == category]
 
 
 def get_mapping_by_title(title: str) -> Optional[SectionMapping]:
@@ -227,5 +226,33 @@ def get_mapping_by_title(title: str) -> Optional[SectionMapping]:
     Returns:
         SectionMapping if found, None otherwise
     """
-    # TODO: Implement fuzzy matching logic
-    pass
+    if not title:
+        return None
+
+    from difflib import SequenceMatcher
+
+    title_normalized = title.strip().upper()
+
+    # Try exact match first
+    for mapping in SECTION_MAPPINGS:
+        for common_title in mapping.common_titles:
+            if title_normalized == common_title.upper():
+                return mapping
+
+    # Try fuzzy match (using simple substring matching)
+    best_match = None
+    best_similarity = 0.0
+
+    for mapping in SECTION_MAPPINGS:
+        for common_title in mapping.common_titles:
+            similarity = SequenceMatcher(
+                None,
+                title_normalized,
+                common_title.upper()
+            ).ratio()
+
+            if similarity > 0.85 and similarity > best_similarity:
+                best_match = mapping
+                best_similarity = similarity
+
+    return best_match

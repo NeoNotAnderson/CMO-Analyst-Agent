@@ -12,7 +12,6 @@ from difflib import SequenceMatcher
 
 from .section_taxonomy import (
     SectionCategory,
-    SectionSubcategory,
     SectionMapping,
     SECTION_MAPPINGS
 )
@@ -115,7 +114,7 @@ class SectionClassifier:
         content_sample = section_text[:400] if section_text else ''
 
         # Classify the section
-        category, _, confidence = self._classify_single_section(
+        category, confidence = self._classify_single_section(
             title=title,
             level=level,
             page_num=page_start,
@@ -162,7 +161,7 @@ class SectionClassifier:
         level: int,
         page_num: int,
         content_sample: Optional[str] = None
-    ) -> Tuple[Optional[SectionCategory], Optional[SectionSubcategory], float]:
+    ) -> Tuple[Optional[SectionCategory], float]:
         """
         Classify a single section using rule-based and LLM methods.
 
@@ -173,27 +172,27 @@ class SectionClassifier:
             content_sample: Sample content from the section (optional)
 
         Returns:
-            Tuple of (category, subcategory, confidence_score)
+            Tuple of (category, confidence_score)
         """
         # Step 1: Try rule-based matching (exact then fuzzy)
         mapping, confidence = self._rule_based_match(title)
 
         # Step 2: If confidence < 0.85, use LLM classification
         if confidence < 0.85 and self.llm_client and content_sample:
-            llm_category, llm_subcategory, llm_confidence = self._llm_classify(
+            llm_category, llm_confidence = self._llm_classify(
                 title=title,
                 content_sample=content_sample,
                 context={'level': level, 'page_num': page_num}
             )
             # Use LLM result if it has higher confidence
             if llm_confidence > confidence:
-                return (llm_category, llm_subcategory, llm_confidence)
+                return (llm_category, llm_confidence)
 
         # Return rule-based result
         if mapping:
-            return (mapping.category, mapping.subcategory, confidence)
+            return (mapping.category, confidence)
 
-        return (None, None, 0.0)
+        return (None, 0.0)
 
     def _rule_based_match(
         self,
@@ -244,7 +243,7 @@ class SectionClassifier:
         title: str,
         content_sample: str,
         context: Optional[Dict] = None
-    ) -> Tuple[SectionCategory, Optional[SectionSubcategory], float]:
+    ) -> Tuple[Optional[SectionCategory], float]:
         """
         Use LLM to classify section when rule-based methods fail.
 
@@ -254,10 +253,10 @@ class SectionClassifier:
             context: Additional context (parent section, etc.)
 
         Returns:
-            Tuple of (category, subcategory, confidence_score)
+            Tuple of (category, confidence_score)
         """
         if not self.llm_client:
-            return (None, None, 0.0)
+            return (None, 0.0)
 
         # Build classification prompt
         prompt = self._build_classification_prompt(title, content_sample, context)
@@ -274,18 +273,16 @@ class SectionClassifier:
             result = json.loads(response.choices[0].message.content)
 
             category_str = result.get('category')
-            subcategory_str = result.get('subcategory')
             confidence = float(result.get('confidence', 0.0))
 
-            # Convert strings to enums
+            # Convert string to enum
             category = SectionCategory(category_str) if category_str else None
-            subcategory = SectionSubcategory(subcategory_str) if subcategory_str else None
 
-            return (category, subcategory, confidence)
+            return (category, confidence)
 
         except Exception as e:
             print(f"LLM classification error: {e}")
-            return (None, None, 0.0)
+            return (None, 0.0)
 
     def _build_classification_prompt(
         self,
@@ -309,35 +306,28 @@ class SectionClassifier:
             f"- {cat.value}: {cat.name}" for cat in SectionCategory
         ])
 
-        subcategories_desc = "\n".join([
-            f"- {subcat.value}: {subcat.name}" for subcat in SectionSubcategory
-        ])
-
         prompt = f"""You are classifying sections from a CMO prospectus document.
 
-                AVAILABLE CATEGORIES:
-                {categories_desc}
+AVAILABLE CATEGORIES:
+{categories_desc}
 
-                AVAILABLE SUBCATEGORIES:
-                {subcategories_desc}
+SECTION TO CLASSIFY:
+Title: {title}
+Content Sample: {content_sample[:500]}
 
-                SECTION TO CLASSIFY:
-                Title: {title}
-                Content Sample: {content_sample[:500]}
+{"Context: " + json.dumps(context) if context else ""}
 
-                {"Context: " + json.dumps(context) if context else ""}
+Classify this section into the most appropriate category.
+Return your response as JSON with the following format:
+{{
+    "category": "category_value",
+    "confidence": 0.0-1.0,
+    "reasoning": "brief explanation"
+}}
 
-                Classify this section into the most appropriate category and subcategory.
-                Return your response as JSON with the following format:
-                {{
-                    "category": "category_value",
-                    "subcategory": "subcategory_value or null",
-                    "confidence": 0.0-1.0,
-                    "reasoning": "brief explanation"
-                }}
-
-                Use the exact enum values (e.g., "deal_summary", "offered_certificates").
-                """
+Use the exact enum values (e.g., "deal_summary", "offered_certificates", "payment_priority").
+The hierarchy is maintained by the document structure, so assign the most specific category that matches.
+"""
         return prompt
 
     def get_classification_stats(

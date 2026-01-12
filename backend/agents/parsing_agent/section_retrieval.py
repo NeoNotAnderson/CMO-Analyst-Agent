@@ -51,62 +51,7 @@ class SectionRetriever:
         # 2. If subcategory provided, add to filter
         # 3. Return ordered by page_start
         pass
-
-    def get_by_page_range(
-        self,
-        start_page: int,
-        end_page: int
-    ) -> QuerySet[SectionMap]:
-        """
-        Retrieve sections within a page range.
-
-        Args:
-            start_page: Starting page number
-            end_page: Ending page number
-
-        Returns:
-            QuerySet of SectionMap objects
-        """
-        # TODO: Implement page range retrieval
-        # Query sections where:
-        # - page_start >= start_page AND page_end <= end_page
-        # OR sections that overlap with range
-        pass
-
-    def get_sections_with_tables(
-        self,
-        category: Optional[Union[str, SectionMap.Category]] = None
-    ) -> QuerySet[SectionMap]:
-        """
-        Retrieve sections containing tables.
-
-        Args:
-            category: Optional category filter
-
-        Returns:
-            QuerySet of SectionMap objects with tables
-        """
-        # TODO: Implement table section retrieval
-        # Query sections with has_tables=True
-        # Optionally filter by category
-        pass
-
-    def get_sections_with_structured_data(
-        self,
-        category: Optional[Union[str, SectionMap.Category]] = None
-    ) -> QuerySet[SectionMap]:
-        """
-        Retrieve sections with structured data.
-
-        Args:
-            category: Optional category filter
-
-        Returns:
-            QuerySet of SectionMap objects with structured data
-        """
-        # TODO: Implement structured data retrieval
-        pass
-
+    
     def search_by_keywords(
         self,
         keywords: List[str],
