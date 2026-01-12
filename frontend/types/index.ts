@@ -40,10 +40,11 @@ export interface ChatHistory {
 }
 
 export interface UploadResponse {
-  prospectus_id: string;
+  prospectus_id?: string;
   prospectus_name: string;
-  status: string;
+  status?: string;
   message: string;
+  duplicate?: boolean;
 }
 
 export interface ApiError {

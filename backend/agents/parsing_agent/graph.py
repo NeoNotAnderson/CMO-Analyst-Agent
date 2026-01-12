@@ -74,6 +74,7 @@ def run_agent(prospectus: Prospectus, config=None):
         - Check if parsing is already complete (use prospectus_id)
         - Parse index pages to understand document structure
         - Parse individual sections and pages
+        - Classify sections into standardized taxonomy (use prospectus_id)
         - Save results to database (use prospectus_id)
 
         IMPORTANT CONSTRAINTS:
@@ -81,11 +82,16 @@ def run_agent(prospectus: Prospectus, config=None):
         - When parsing images with OpenAI, ONLY send 1-2 pages at a time
         - Processing too many pages at once will exceed token limits
 
+        WORKFLOW:
+        1. Parse the index to get document structure
+        2. Parse the full prospectus using the parsed index
+        3. Classify sections and build section map for efficient retrieval
+
         Think step by step and use the appropriate tools to complete the parsing task.
         Use the prospectus_id when calling tools that require it.
         """)
 
-    user_message = HumanMessage(content=f"Parse the CMO prospectus with ID {prospectus.prospectus_id}. Parsing consists of two steps: first parse the index to get the file structure, then parse the rest based on the index. Use the tools provided and save results to database.")
+    user_message = HumanMessage(content=f"Parse the CMO prospectus with ID {prospectus.prospectus_id}. Parsing consists of three steps: (1) parse the index to get the file structure, (2) parse the rest based on the index, (3) classify sections into standardized taxonomy and build section map. Use the tools provided and save results to database.")
     state = {
         'prospectus': prospectus,
         'messages': [system_message, user_message],

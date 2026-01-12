@@ -20,23 +20,11 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [duplicateMessage, setDuplicateMessage] = useState<string>('');
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    // Get the first file
-    if (acceptedFiles.length === 0) {
-      setError('No file selected');
-      return;
-    }
-
-    const file = acceptedFiles[0];
-
-    // Validate PDF file
-    const validationError = validatePdfFile(file);
-    if (validationError.error) {
-      setError(validationError.error);
-      return;
-    }
-
+  const handleUpload = async (file: File, useExisting: boolean = false) => {
     // Reset error and start upload
     setError('');
     setIsUploading(true);
@@ -44,8 +32,18 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
 
     try {
       // Upload file to backend
-      const response = await uploadProspectus(file);
-      const prospectusId = response.prospectus_id;
+      const response = await uploadProspectus(file, useExisting);
+
+      // Check if duplicate was found
+      if (response.duplicate) {
+        setIsUploading(false);
+        setShowOverwriteDialog(true);
+        setPendingFile(file);
+        setDuplicateMessage(response.message);
+        return;
+      }
+
+      const prospectusId = response.prospectus_id!;
 
       // Start polling for parsing status
       setUploadStatus('parsing');
@@ -76,7 +74,41 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
       setError(errorMessage);
     }
-  }, [onUploadComplete]);
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    // Get the first file
+    if (acceptedFiles.length === 0) {
+      setError('No file selected');
+      return;
+    }
+
+    const file = acceptedFiles[0];
+
+    // Validate PDF file
+    const validationError = validatePdfFile(file);
+    if (validationError.error) {
+      setError(validationError.error);
+      return;
+    }
+
+    // Initiate upload
+    await handleUpload(file, false);
+  }, []);
+
+  const handleUseExisting = async () => {
+    if (pendingFile) {
+      setShowOverwriteDialog(false);
+      await handleUpload(pendingFile, true);
+      setPendingFile(null);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowOverwriteDialog(false);
+    setPendingFile(null);
+    setDuplicateMessage('');
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -132,6 +164,30 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
       {error && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
+        </div>
+      )}
+
+      {/* Use Existing Confirmation Dialog */}
+      {showOverwriteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">Duplicate File Detected</h3>
+            <p className="text-gray-600 mb-6">{duplicateMessage}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUseExisting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Use Existing
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

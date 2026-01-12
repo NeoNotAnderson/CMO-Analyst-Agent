@@ -1080,18 +1080,34 @@ def store_parsed_pages_in_db(prospectus: Prospectus, page_numbers: List[int], pa
         return False
 
 @tool
-def classify_sections_with_llm(sections: List[Dict]) -> Dict[str, List[Dict]]:
+def classify_and_build_section_map(prospectus_id: str) -> str:
     """
-    Use LLM to classify sections into CMO prospectus section types.
+    Classify all sections from parsed prospectus and build section map in database.
+
+    This is a high-level orchestration tool that:
+    1. Retrieves parsed_index from database
+    2. Classifies each section using rule-based and LLM methods
+    3. Creates SectionMap entries in database
+    4. Updates prospectus parse_status to 'classifying'
 
     Args:
-        sections: List of parsed sections with hierarchy
+        prospectus_id: UUID of the prospectus
 
     Returns:
-        Dictionary mapping section types to their content
-
-    TODO: Implement LLM-based classification
+        Success message with classification statistics
     """
+    from .section_classifier import SectionClassifier
+    from .section_retrieval import SectionMapBuilder
+    from core.models import Prospectus
+
+    # TODO: Implement classification workflow
+    # 1. Get prospectus from database
+    # 2. Check if parsed_index exists
+    # 3. Create SectionClassifier instance
+    # 4. Run classification
+    # 5. Build and save SectionMap entries
+    # 6. Update parse_status to 'completed'
+    # 7. Return statistics
     pass
 
 #parse_index_pages()

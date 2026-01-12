@@ -141,6 +141,161 @@ class ProspectusSection(models.Model):
         return f"{self.section_type} - {self.title[:50]} (Level {self.level})"
 
 
+class SectionMap(models.Model):
+    """
+    Stores classified section mappings with standardized taxonomy.
+
+    This model maps prospectus sections to a standardized taxonomy for
+    efficient retrieval and script generation.
+
+    Attributes:
+        prospectus: Foreign key to Prospectus
+        category: Primary section category from taxonomy
+        subcategory: Optional subcategory for detailed classification
+        title: Original section title from prospectus
+        page_start: Starting page number
+        page_end: Ending page number
+        level: Hierarchy level from index
+        parent_category: Parent section's category (for nested sections)
+        confidence_score: Classification confidence (0.0-1.0)
+        classification_method: How it was classified (rule/llm/manual)
+        content_summary: Brief summary of section content
+        keywords: Extracted keywords for search
+        page_numbers: Full list of page numbers in section
+    """
+
+    class Category(models.TextChoices):
+        """Standardized section categories."""
+        DEAL_SUMMARY = 'deal_summary', 'Deal Summary'
+        RISK_DESCRIPTION = 'risk_factors', 'Risk Factors'
+        CERTIFICATE_DESCRIPTION = 'certificate_structure', 'Certificate Structure'
+        COLLATERAL_DESCRIPTION = 'collateral_description', 'Collateral Description'
+        UNCLASSIFIED = 'unclassified', 'Unclassified'
+
+    class Subcategory(models.TextChoices):
+        """Detailed subcategories."""
+        # DEAL_SUMMARY subsections
+        CERTIFICATE_SUMARY = 'offered_certificates', 'Offered Certificates'
+        COUNTERPARTIES = 'counterparties', 'Counterparties'
+        KEY_DATES = 'key_dates', 'Key Dates'
+        PAYMENT_PRIORITY = 'payment_priority', 'Payment Priority'
+        INTEREST_DISTRIBUTION = 'interest_distribution', 'Interest Distribution'
+        PRINCIPAL_DISTRIBUTION = 'principal_distribution', 'Principal Distribution'
+        CROSS_COLLATERALIZATION = 'cross_collateralization', 'Cross-Collateralization'
+        CLEAN_UP_CALL = 'clean_up_call', 'Clean-Up Call'
+        CREDIT_ENHANCEMENT = 'credit_enhancement', 'Credit Enhancement'
+        MORTGAGE_SUMMARY = 'mortgage_summary', 'Mortgage Summary'
+        TAX_INFORMATION = 'tax_information', 'Tax Information'
+        CERTIFICATE_RATINGS = 'certificate_ratings', 'Certificate Ratings'
+
+        # RISK_DESCRIPTION subsections
+        PREPAYMENT_RISK = 'prepayment_risk', 'Prepayment Risk'
+        INTEREST_RATE_RISK = 'interest_rate_risk', 'Interest Rate Risk'
+        CREDIT_ENHANCEMENT_RISK = 'credit_enhancement_risk', 'Credit Enhancement Risk'
+
+        # CERTIFICATE_DESCRIPTION subsections
+        CERTIFICATE_CHARACTERISTICS = 'certificate_characteristics', 'Certificate Characteristics'
+        LOSS_ALLOCATION = 'loss_allocation', 'Loss Allocation'
+        SUBORDINATE_CERTIFICATES_PAYMENTS = 'subordinate_certificates_payments', 'Subordinate Certificates Payments'
+
+        # COLLATERAL_DESCRIPTION subsections
+        MORTGAGE_CHARACTERISTICS = 'loan_characteristics', 'Loan Characteristics'
+        MORTGAGE_STATISTICS = 'loan_statistics', 'Loan Statistics'
+        MORTGAGE_ASSIGNEMT = 'loan_assignment', 'Loan Assignment'
+
+    class ClassificationMethod(models.TextChoices):
+        """Methods used for classification."""
+        RULE_EXACT = 'rule_exact', 'Rule-Based (Exact Match)'
+        RULE_FUZZY = 'rule_fuzzy', 'Rule-Based (Fuzzy Match)'
+        RULE_KEYWORD = 'rule_keyword', 'Rule-Based (Keyword Match)'
+        LLM = 'llm', 'LLM Classification'
+        MANUAL = 'manual', 'Manual Classification'
+
+    prospectus = models.ForeignKey(
+        Prospectus,
+        on_delete=models.CASCADE,
+        related_name='section_maps',
+        db_column='prospectus_id'
+    )
+    category = models.CharField(
+        max_length=50,
+        choices=Category.choices,
+        db_index=True,
+        help_text="Primary section category"
+    )
+    subcategory = models.CharField(
+        max_length=50,
+        choices=Subcategory.choices,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Detailed subcategory"
+    )
+    title = models.CharField(max_length=500, help_text="Original section title")
+    page_start = models.IntegerField(help_text="Starting page number")
+    page_end = models.IntegerField(help_text="Ending page number")
+    level = models.IntegerField(default=1, help_text="Hierarchy level from index")
+    parent_category = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Parent section's category"
+    )
+    confidence_score = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.0,
+        help_text="Classification confidence (0.0-1.0)"
+    )
+    classification_method = models.CharField(
+        max_length=20,
+        choices=ClassificationMethod.choices,
+        default=ClassificationMethod.LLM
+    )
+    content_summary = models.TextField(blank=True, help_text="Brief content summary")
+    keywords = models.JSONField(default=list, blank=True, help_text="Extracted keywords")
+    page_numbers = models.JSONField(default=list, help_text="All page numbers in section")
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = 'section_map'
+        ordering = ['prospectus', 'page_start']
+        indexes = [
+            models.Index(fields=['prospectus', 'category']),
+            models.Index(fields=['prospectus', 'subcategory']),
+            models.Index(fields=['prospectus', 'page_start', 'page_end']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prospectus', 'title', 'page_start'],
+                name='unique_section_per_prospectus'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.category} - {self.title[:50]} (Pages {self.page_start}-{self.page_end})"
+
+    def get_page_range(self) -> range:
+        """
+        Get range object for all pages in section.
+
+        Returns:
+            range: Page range from start to end (inclusive)
+        """
+        # TODO: Implement page range helper
+        pass
+
+    def get_related_sections(self) -> 'models.QuerySet[SectionMap]':
+        """
+        Get related sections (same category, nearby pages).
+
+        Returns:
+            QuerySet: Related SectionMap objects
+        """
+        # TODO: Implement related sections query
+        pass
+
+
 class TranchesDefinition(models.Model):
     """
     Stores deal-level tranche definitions and parameters.
