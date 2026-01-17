@@ -83,9 +83,23 @@ def run_agent(prospectus: Prospectus, config=None):
         - Processing too many pages at once will exceed token limits
 
         WORKFLOW:
-        1. Parse the index to get document structure
-        2. Parse the full prospectus using the parsed index
-        3. Classify sections and build section map for efficient retrieval
+        1. Check the parse status using check_parse_status
+        2. Based on the status, execute the required steps:
+           - If status is 'pending' or 'parsing_index':
+             * Determine doc type
+             * Find index pages
+             * Convert index pages to images (max 2 pages at a time)
+             * Parse index images with OpenAI
+           - If status is 'parsing_sections':
+             * Call parse_prospectus_with_parsed_index (this is ONE tool call)
+           - If status is 'classifying':
+             * Call classify_and_build_section_map (REQUIRED - don't skip this!)
+           - If status is 'completed':
+             * Parsing is already done, report success
+
+        CRITICAL: After parse_prospectus_with_parsed_index completes, status becomes 'classifying'.
+        You MUST then call classify_and_build_section_map to finish the job.
+        The parsing is NOT complete until classify_and_build_section_map returns success and status is 'completed'.
 
         Think step by step and use the appropriate tools to complete the parsing task.
         Use the prospectus_id when calling tools that require it.

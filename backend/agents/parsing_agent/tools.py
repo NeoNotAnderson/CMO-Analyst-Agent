@@ -24,6 +24,25 @@ load_dotenv()
 llm_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @tool
+def check_parse_status(prospectus_id: str) -> str:
+    """
+    Check the current parsing status of a prospectus.
+
+    Args:
+        prospectus_id: UUID string of the Prospectus object
+
+    Returns:
+        str: Parse status (one of: 'pending', 'parsing_index', 'parsing_sections',
+             'classifying', 'completed', 'failed')
+    """
+    try:
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+        return prospectus.parse_status
+    except Prospectus.DoesNotExist:
+        print(f'[ERROR] Prospectus with id {prospectus_id} does not exist')
+        return False
+
+@tool
 def check_parsed_index_exists(prospectus_id: str) -> bool:
     """
     Check if parsed index already exists in the database.
@@ -37,12 +56,6 @@ def check_parsed_index_exists(prospectus_id: str) -> bool:
     print(f"[DEBUG] check_parsed_index_exists called with: {prospectus_id} (type: {type(prospectus_id)})")
 
     try:
-        # Try to find all prospectuses for debugging
-        all_prospectuses = Prospectus.objects.all()
-        print(f"[DEBUG] Total prospectuses in DB: {all_prospectuses.count()}")
-        for p in all_prospectuses:
-            print(f"[DEBUG]   - ID: {p.prospectus_id} (type: {type(p.prospectus_id)}), Name: {p.prospectus_name}")
-
         prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
         print(f"[DEBUG] Found prospectus: {prospectus.prospectus_name}")
         return prospectus.parsed_index is not None and len(prospectus.parsed_index) > 0
@@ -198,6 +211,7 @@ def find_index_pages(prospectus_id: str, doc_type: str = "supplement") -> List[i
             break
     doc.close()
     prospectus.index_page_numbers = index_pages
+    prospectus.parse_status = "parsing_index"
     prospectus.save()
     return index_pages
 
@@ -438,11 +452,11 @@ def parse_page_images_with_openai(prospectus_id: str, is_index: bool) -> str:
         if is_index:
             add_page_number_to_parsed_index(parsed_pages)
             prospectus.parsed_index = parsed_pages
-            prospectus.parse_status = 'parsing_index'
+            prospectus.parse_status = 'parsing_sections'
             prospectus.save()
             num_sections = len(parsed_pages.get('sections', []))
             print(f"[SUCCESS] Parsed and saved index with {num_sections} sections")
-            print(f"[STATUS] Updated parse_status to: parsing_index")
+            print(f"[STATUS] Updated parse_status to: parsing_sections")
             return f"Successfully parsed and saved index pages with {num_sections} top-level sections to database."
         else:
             if not prospectus.metadata:
@@ -700,12 +714,12 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
             doc.close()
 
         prospectus.parsed_file = index
-        prospectus.parse_status = 'completed'
+        prospectus.parse_status = 'classifying'
         prospectus.save()
 
         num_sections = len(index.get('sections', []))
         print(f"[SUCCESS] Parsed and saved full prospectus with {num_sections} top-level sections")
-        print(f"[STATUS] Updated parse_status to: completed")
+        print(f"[STATUS] Updated parse_status to: classifying")
         return f"Successfully parsed and saved full prospectus with {num_sections} top-level sections to database."
 
     except Exception as e:

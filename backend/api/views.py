@@ -23,6 +23,38 @@ import threading
 import uuid
 from datetime import datetime
 
+# ============================================================================
+# SESSION MANAGEMENT
+# ============================================================================
+
+# Global session store (in-memory for MVP, replace with Django session/DB later)
+_SESSION_STORE = {}
+
+
+def initialize_user_session(session_id: str) -> str:
+    """
+    Initialize a new user session.
+
+    This is called by the API when a user logs in.
+
+    Args:
+        session_id: Unique session identifier (can be user_id or session token)
+
+    Returns:
+        str: Confirmation message with session details
+    """
+    if session_id not in _SESSION_STORE:
+        _SESSION_STORE[session_id] = {
+            'active_prospectus_id': None,
+            'active_prospectus_name': None,
+            'conversation_history': []
+        }
+        return f"Session {session_id} initialized. No active prospectus set. You can ask general CMO questions or specify a prospectus to query."
+    else:
+        active = _SESSION_STORE[session_id].get('active_prospectus_name', 'None')
+        return f"Session {session_id} already exists. Active prospectus: {active}"
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
@@ -287,21 +319,120 @@ def get_prospectus_status(request, prospectus_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def send_chat_message(request):
+def initialize_session(request):
     """
-    Send chat message and get agent response
+    Initialize a new query session for the user.
 
-    Steps:
-    1. Get prospectus_id and message from request.data
-    2. Validate prospectus exists and user has access
-    3. Process message with query agent (future implementation)
-    4. For now, return a mock response
-    5. Save conversation to database (future)
-    6. Return agent response
+    This should be called when the user first accesses the chat interface.
+    It creates a session ID and initializes the query agent session.
 
     Expected Request:
     {
-        "prospectus_id": "uuid",
+        # No required fields - session is created automatically
+    }
+
+    Expected Response:
+    {
+        "session_id": "user_123",
+        "message": "Session initialized successfully",
+        "prospectuses": [
+            {
+                "prospectus_id": "uuid",
+                "prospectus_name": "filename.pdf",
+                "parse_status": "completed"
+            }
+        ]
+    }
+    """
+    # Use user ID as session ID (or generate a unique session ID)
+    session_id = f"user_{request.user.id}"
+
+    # Initialize user session
+    init_message = initialize_user_session(session_id)
+
+    # Get user's prospectuses
+    prospectuses = Prospectus.objects.filter(created_by=request.user).order_by('-upload_date')
+    prospectus_data = ProspectusSerializer(prospectuses, many=True).data
+
+    return Response({
+        'session_id': session_id,
+        'message': init_message,
+        'prospectuses': prospectus_data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_active_prospectus_view(request):
+    """
+    Set the active prospectus for the user's session.
+
+    This should be called when the user selects a prospectus from the sidebar.
+
+    Expected Request:
+    {
+        "prospectus_id": "uuid"
+    }
+
+    Expected Response:
+    {
+        "message": "Active prospectus updated",
+        "prospectus_name": "filename.pdf"
+    }
+    """
+    prospectus_id = request.data.get('prospectus_id')
+    if not prospectus_id:
+        return Response(
+            {'error': 'prospectus_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    session_id = f"user_{request.user.id}"
+
+    # Validate prospectus exists and user has access
+    try:
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+        if prospectus.created_by != request.user:
+            return Response(
+                {'error': 'You do not have access to this prospectus'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    except Prospectus.DoesNotExist:
+        return Response(
+            {'error': 'Prospectus not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Update backend session
+    if session_id in _SESSION_STORE:
+        _SESSION_STORE[session_id]['active_prospectus_id'] = str(prospectus.prospectus_id)
+        _SESSION_STORE[session_id]['active_prospectus_name'] = prospectus.prospectus_name
+    else:
+        # Initialize session if not exists
+        _SESSION_STORE[session_id] = {
+            'active_prospectus_id': str(prospectus.prospectus_id),
+            'active_prospectus_name': prospectus.prospectus_name,
+            'conversation_history': []
+        }
+
+    return Response({
+        'message': 'Active prospectus updated',
+        'prospectus_id': str(prospectus.prospectus_id),
+        'prospectus_name': prospectus.prospectus_name
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_chat_message(request):
+    """
+    Send chat message and get agent response.
+
+    The backend uses the session to determine which prospectus is active.
+    User must have selected a prospectus via the sidebar first.
+
+    Expected Request:
+    {
         "message": "What is the deal structure?"
     }
 
@@ -310,46 +441,40 @@ def send_chat_message(request):
         "id": "msg_123",
         "role": "assistant",
         "content": "The deal structure is...",
-        "timestamp": "2024-01-01T00:00:00Z",
-        "prospectus_id": "uuid"
+        "timestamp": "2024-01-01T00:00:00Z"
     }
     """
-    
+    from agents.query_agent import run_agent, extract_response
+
     message = request.data.get('message')
     if not message:
         return Response(
             {'error': "message missing in the input"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    prospectus_id = request.data.get('prospectus_id')
-    if not prospectus_id:
-        return Response(
-            {'error': "prospectus_id missing in the input"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    try:
-        file = Prospectus.objects.get(prospectus_id=prospectus_id)
-    except Prospectus.DoesNotExist:
-        return Response(
-            {'error': 'Prospectus not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    if file.created_by != request.user:
-        return Response(
-            {'error': "current user does not have access to this file"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    # Mock response for now
-    response_message = {
-        'id': str(uuid.uuid4()),
-        'role': 'assistant',
-        'content': f'This is a mock response to: {message}. Query agent not implemented yet.',
-        'timestamp': datetime.now().isoformat(),
-        'prospectus_id': prospectus_id
-    }
 
-    return Response(response_message)
+    # Use user ID to get session
+    session_id = f"user_{request.user.id}"
+
+    # Run query agent (agent will use session to get active prospectus)
+    try:
+        result = run_agent(session_id=session_id, user_query=message)
+        response_content = extract_response(result)
+
+        response_message = {
+            'id': str(uuid.uuid4()),
+            'role': 'assistant',
+            'content': response_content,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        return Response(response_message, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {'error': f'Query agent error: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])

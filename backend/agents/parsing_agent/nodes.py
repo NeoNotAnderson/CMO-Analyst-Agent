@@ -11,9 +11,10 @@ from langgraph.prebuilt import ToolNode
 from dotenv import load_dotenv
 import os
 from .tools import (
+    check_parse_status,
     check_parsed_index_exists,
     parse_prospectus_with_parsed_index,
-    classify_sections_with_llm,
+    classify_and_build_section_map,
     determin_doc_type,
     find_index_pages,
     convert_pages_to_images,
@@ -26,16 +27,16 @@ llm = ChatOpenAI(model='gpt-5-nano', api_key=api_key)
 # Define the list of tools available to the agent
 # Mix of granular tools and one complex orchestration tool (parse_prospectus_with_parsed_index)
 TOOLS = [
+    check_parse_status,
     check_parsed_index_exists,
     parse_prospectus_with_parsed_index,
-    classify_sections_with_llm,
+    classify_and_build_section_map,
     determin_doc_type,
     find_index_pages,
     convert_pages_to_images,
     parse_page_images_with_openai
-    # Note: save_parsed_index_to_db is now a helper function (not a tool)
 ]
-llm_with_tools = llm.bind_tools(TOOLS)
+llm_with_tools = llm.bind_tools(TOOLS, seed = None)
 
 def agent_node(state: ParsingState) -> ParsingState:
     """

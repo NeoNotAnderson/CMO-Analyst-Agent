@@ -13,9 +13,6 @@ from django.contrib.auth.models import User
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for User model
-
-    TODO: Configure fields to return
-    Should include: id, username, email
     """
     class Meta:
         model = User
@@ -25,10 +22,6 @@ class UserSerializer(serializers.ModelSerializer):
 class ProspectusSerializer(serializers.ModelSerializer):
     """
     Serializer for Prospectus model
-
-    TODO: Configure fields to return
-    Should include: prospectus_id, prospectus_name, prospectus_file,
-                   upload_date, parse_status, created_by
     """
     class Meta:
         model = Prospectus

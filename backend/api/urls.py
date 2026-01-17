@@ -13,6 +13,10 @@ urlpatterns = [
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/me/', views.get_current_user, name='current_user'),
 
+    # Session endpoints
+    path('session/initialize/', views.initialize_session, name='initialize_session'),
+    path('session/active-prospectus/', views.set_active_prospectus_view, name='set_active_prospectus'),
+
     # Prospectus endpoints
     path('prospectus/upload/', views.upload_prospectus, name='upload_prospectus'),
     path('prospectus/list/', views.get_prospectus_list, name='prospectus_list'),

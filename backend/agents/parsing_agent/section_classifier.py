@@ -44,13 +44,10 @@ class SectionClassifier:
         Classify all sections and enrich parsed_file with category/confidence in-place.
 
         This method adds 'category' and 'confidence' fields to each section in parsed_file.
-        The hierarchy is already handled by the 'subsections' structure, so we don't need
-        subcategory fields.
 
         Example:
             Section (level=1, title="SUMMARY") -> category="deal_summary"
-                Subsection (level=2, title="OFFERED CERTIFICATES") -> category="offered_certificates"
-
+        
         Args:
             prospectus: Prospectus object with parsed_file containing all sections
 
@@ -80,8 +77,8 @@ class SectionClassifier:
                 unclassified_count += 1
 
             # Recursively classify subsections if they exist
-            if 'subsections' in section and section['subsections']:
-                sub_classified, sub_unclassified = self._classify_subsections(section['subsections'])
+            if 'sections' in section and section['sections']:
+                sub_classified, sub_unclassified = self._classify_subsections(section['sections'])
                 classified_count += sub_classified
                 unclassified_count += sub_unclassified
 
@@ -148,8 +145,8 @@ class SectionClassifier:
                 unclassified += 1
 
             # Recurse deeper if needed
-            if 'subsections' in subsection and subsection['subsections']:
-                sub_classified, sub_unclassified = self._classify_subsections(subsection['subsections'])
+            if 'sections' in subsection and subsection['sections']:
+                sub_classified, sub_unclassified = self._classify_subsections(subsection['sections'])
                 classified += sub_classified
                 unclassified += sub_unclassified
 
@@ -371,7 +368,7 @@ The hierarchy is maintained by the document structure, so assign the most specif
 
     def _collect_stats_recursive(self, sections: List[Dict], stats: Dict, confidences: List[float]) -> None:
         """
-        Recursively collect statistics from sections and subsections.
+        Recursively collect statistics from sections.
 
         Args:
             sections: List of section dicts
@@ -400,8 +397,8 @@ The hierarchy is maintained by the document structure, so assign the most specif
                 stats['unclassified_count'] += 1
 
             # Recurse into subsections
-            if 'subsections' in section and section['subsections']:
-                self._collect_stats_recursive(section['subsections'], stats, confidences)
+            if 'sections' in section and section['sections']:
+                self._collect_stats_recursive(section['sections'], stats, confidences)
 
     def export_section_map(
         self,
