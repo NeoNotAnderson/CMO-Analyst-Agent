@@ -713,8 +713,9 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
                 pos, last_processed_section = combine_sections(parent_section, next_index_section_title, page_sections, pos, last_processed_section)
             doc.close()
 
-        # Add sample_text to all sections for query analysis
+        # Add level and sample_text to all sections for query analysis
         if 'sections' in index:
+            add_level_to_sections(index['sections'])
             add_sample_text_to_sections(index['sections'])
 
         prospectus.parsed_file = index
@@ -784,6 +785,36 @@ def add_sample_text_to_sections(sections: List[Dict]) -> None:
             # Recursively process subsections
             if 'sections' in section and section['sections']:
                 add_sample_text_to_sections(section['sections'])
+
+
+def add_level_to_sections(sections: List[Dict], parent_level: int = 0) -> None:
+    """
+    Recursively add 'level' field to all sections and subsections if not present.
+
+    This function ensures all sections have a 'level' field for hierarchical organization.
+    Top-level sections get level=1, their subsections get level=2.
+
+    Args:
+        sections: List of section dicts (modified in place)
+        parent_level: Level of the parent section (0 for root, used for recursion)
+
+    Returns:
+        None (modifies sections in place by adding 'level' field if missing)
+
+    Side effects:
+        - Adds 'level' field to sections that don't have it
+        - Level 1 for top-level sections
+        - Level 2 for subsections
+    """
+    for section in sections:
+        if isinstance(section, dict):
+            # Add level if not present
+            if 'level' not in section:
+                section['level'] = parent_level + 1
+
+            # Recursively process subsections
+            if 'sections' in section and section['sections']:
+                add_level_to_sections(section['sections'], parent_level=section['level'])
 
 def build_prompt_for_parsing_pages_with_table(images: List[Dict]) -> Dict:
     """

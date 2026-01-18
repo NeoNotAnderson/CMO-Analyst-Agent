@@ -290,6 +290,14 @@ def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
         ================================================================================
 
         [Full subsection text...]
+
+        --- TABLE ---
+        Summary: Distribution priority waterfall
+
+        Table Data:
+          Row 1: Priority: 1 | Description: Trustee fees | Amount: $5,000
+          Row 2: Priority: 2 | Description: Servicing fees | Amount: 0.25%
+        --- END TABLE ---
     """
     from core.models import Prospectus
 
@@ -346,6 +354,7 @@ def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
             level = section.get('level', 1)
             page_num = section.get('page_num', 'Unknown')
             text = section.get('text', '[No content]')
+            table = section.get('table')
             parent_title = section.get('_parent_title', None)  # Added by collection function
 
             # Build hierarchy breadcrumb
@@ -354,16 +363,34 @@ def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
             else:
                 hierarchy_path = title
 
-            # Return FULL text - no truncation (this is proper RAG)
-            # The LLM context window is large enough to handle 3 full sections
-            result.append(f"""
+            # Build section content
+            section_content = [f"""
 {'='*80}
 SECTION {idx}: [{hierarchy_path}] (Page {page_num})
 {'='*80}
 
 {text}
+"""]
 
-""")
+            # Add table if it exists and is not empty
+            if table and isinstance(table, dict):
+                table_summary = table.get('summary', '')
+                table_data = table.get('data', [])
+
+                if table_data:
+                    section_content.append("\n--- TABLE ---")
+                    if table_summary:
+                        section_content.append(f"Summary: {table_summary}")
+
+                    # Format table data
+                    section_content.append("\nTable Data:")
+                    for row_idx, row in enumerate(table_data, 1):
+                        if isinstance(row, dict):
+                            row_str = " | ".join(f"{k}: {v}" for k, v in row.items())
+                            section_content.append(f"  Row {row_idx}: {row_str}")
+                    section_content.append("--- END TABLE ---\n")
+
+            result.append("".join(section_content))
 
         return "\n".join(result)
 
