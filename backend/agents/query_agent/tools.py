@@ -39,13 +39,13 @@ class QueryClassification(BaseModel):
 
 class SectionReference(BaseModel):
     """Schema for a section reference with hierarchy information."""
-    category: str = Field(description="Category name")
-    parent: Optional[str] = Field(description="Parent category name, or null if top-level")
+    title: str = Field(description="Exact section title from the prospectus")
+    parent_title: Optional[str] = Field(description="Parent section title, or null if top-level")
 
 
 class SectionAnalysis(BaseModel):
-    """Schema for section analysis with hierarchy."""
-    sections: List[SectionReference] = Field(description="List of relevant sections with parent information")
+    """Schema for section analysis result."""
+    sections: List[SectionReference] = Field(description="List of up to 3 most relevant sections")
     reasoning: str = Field(description="Brief explanation for the section selection")
 
 
@@ -164,6 +164,9 @@ def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
     """
     Analyze which prospectus sections are relevant to the query.
 
+    Uses the actual section structure from parsed_file (titles and sample text)
+    instead of fixed taxonomy categories.
+
     Args:
         user_query: The user's question
         prospectus_id: Prospectus UUID
@@ -174,11 +177,10 @@ def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
     Example output:
         {
             "sections": [
-                {"category": "deal_summary", "parent": null},
-                {"category": "payment_priority", "parent": "deal_summary"},
-                {"category": "offered_certificates", "parent": "deal_summary"}
+                {"title": "SUMMARY", "parent_title": null},
+                {"title": "Priority of Distributions", "parent_title": "SUMMARY"}
             ],
-            "reasoning": "User is asking about payment waterfall and tranches..."
+            "reasoning": "User is asking about payment waterfall..."
         }
     """
     from core.models import Prospectus
@@ -192,83 +194,45 @@ def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
         if not parsed_file or 'sections' not in parsed_file:
             return json.dumps({
                 "error": "No sections available for this prospectus. It may not be fully parsed yet.",
-                "categories": []
+                "sections": []
             })
 
-        # Collect categories organized by top-level parent (hierarchy-aware)
-        categories_by_parent = _collect_categories_recursive(parsed_file['sections'])
+        # Build hierarchy structure description for LLM
+        sections_structure = get_section_hierarchy_structure(parsed_file['sections'])
 
-        if not categories_by_parent:
+        if not sections_structure.strip():
             return json.dumps({
-                "error": "No classified sections found in this prospectus.",
-                "categories": []
+                "error": "No sections found in this prospectus.",
+                "sections": []
             })
 
-        # Build a description of available categories for the LLM
-        categories_info = []
-        for parent, subcats in categories_by_parent.items():
-            subcats_list = sorted(subcats - {parent})  # Exclude parent from subcats list
-            if subcats_list:
-                categories_info.append(f"- {parent}: {', '.join(subcats_list)}")
-            else:
-                categories_info.append(f"- {parent}")
-
-        available_categories_desc = '\n'.join(categories_info)
-
-        # Use LLM to identify relevant sections with hierarchy information
+        # Use LLM to identify relevant sections
         structured_llm = llm.with_structured_output(SectionAnalysis)
         prompt = SECTION_ANALYSIS_PROMPT.format(
             query=user_query,
-            available_categories=available_categories_desc
+            available_sections=sections_structure
         )
         result = structured_llm.invoke(prompt)
 
-        # Validate sections: ensure categories exist and parent relationships are correct
-        all_valid_categories = set()
-        for parent, subcats in categories_by_parent.items():
-            all_valid_categories.update(subcats)
-
-        # Build validated section list with hierarchy
+        # Validate and build section list
         validated_sections = []
-        top_level_categories_selected = set()
+        top_level_titles_selected = set()
 
-        # First pass: collect all top-level categories that were selected
+        # First pass: collect top-level section titles
         for section_ref in result.sections:
-            category = section_ref.category
-            parent = section_ref.parent
+            if not section_ref.parent_title:
+                top_level_titles_selected.add(section_ref.title)
 
-            if not parent and category in categories_by_parent:
-                top_level_categories_selected.add(category)
-
-        # Second pass: validate and filter sections
+        # Second pass: validate and filter
         for section_ref in result.sections:
-            category = section_ref.category
-            parent = section_ref.parent
-
-            # Check if category exists
-            if category not in all_valid_categories:
+            # Skip subsections if their parent was already selected
+            if section_ref.parent_title and section_ref.parent_title in top_level_titles_selected:
                 continue
 
-            # Validate parent relationship
-            if parent:
-                # This is a subcategory
-                # Skip if its parent category was already selected (avoid duplication)
-                if parent in top_level_categories_selected:
-                    continue
-
-                # Verify it's under the correct parent
-                if parent in categories_by_parent and category in categories_by_parent[parent]:
-                    validated_sections.append({
-                        "category": category,
-                        "parent": parent
-                    })
-            else:
-                # This is a top-level category - verify it's actually top-level
-                if category in categories_by_parent:
-                    validated_sections.append({
-                        "category": category,
-                        "parent": None
-                    })
+            validated_sections.append({
+                "title": section_ref.title,
+                "parent_title": section_ref.parent_title
+            })
 
         return json.dumps({
             "sections": validated_sections,
@@ -285,21 +249,47 @@ def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
 @tool
 def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
     """
-    Retrieve section content from parsed_file based on section references with hierarchy.
+    Retrieve section content from parsed_file based on section titles with hierarchy.
+
+    This tool uses the actual section titles from the prospectus (not fixed taxonomy categories)
+    to locate and retrieve the complete text content.
 
     IMPORTANT FOR THE AGENT:
     - This tool retrieves the actual prospectus text content needed to answer the user's question
     - After calling this tool, you will receive the section content in the tool response
     - Use that content to formulate a detailed, accurate answer to the user's question
-    - The content includes section titles, page numbers, and the full text from those sections
+    - The content includes section titles, page numbers, and the FULL text from those sections
 
     Args:
         prospectus_id: Prospectus UUID
         sections_data: JSON string from analyze_query_sections output
-                      Format: {"sections": [{"category": "...", "parent": "..."}], ...}
+                      Format: {
+                          "sections": [
+                              {"title": "SUMMARY", "parent_title": null},
+                              {"title": "Priority of Distributions", "parent_title": "SUMMARY"}
+                          ],
+                          "reasoning": "..."
+                      }
 
     Returns:
-        str: Retrieved section content formatted with hierarchy breadcrumbs, OR an error message
+        str: Retrieved section content formatted with hierarchy breadcrumbs and full text,
+             OR an error message if sections not found
+
+    Example output:
+        Retrieved 2 section(s) from the prospectus.
+        Use the following COMPLETE content to answer the user's question:
+
+        ================================================================================
+        SECTION 1: [SUMMARY] (Page 5)
+        ================================================================================
+
+        [Full section text...]
+
+        ================================================================================
+        SECTION 2: [SUMMARY > Priority of Distributions] (Page 12)
+        ================================================================================
+
+        [Full subsection text...]
     """
     from core.models import Prospectus
 
@@ -320,31 +310,31 @@ def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
         if not parsed_file or 'sections' not in parsed_file:
             return "No sections available for this prospectus. It may not be fully parsed yet."
 
-        # Collect matching sections using hierarchy-aware matching
+        # Collect matching sections using title-based hierarchy matching
         matching_sections = []
         for section_ref in section_refs:
-            category = section_ref['category']
-            parent = section_ref.get('parent')
+            title = section_ref['title']
+            parent_title = section_ref.get('parent_title')
 
-            if parent:
-                # This is a level 2 subcategory - find it under the specific parent
-                _collect_matching_subsections(
+            if parent_title:
+                # This is a level 2 subsection - find it under the specific parent
+                _collect_matching_subsections_by_title(
                     parsed_file['sections'],
-                    parent_category=parent,
-                    target_category=category,
+                    parent_title=parent_title,
+                    target_title=title,
                     matching_sections=matching_sections
                 )
             else:
-                # This is a level 1 top-level category - find it at top level
-                _collect_matching_top_level_sections(
+                # This is a level 1 top-level section - find it at top level
+                _collect_matching_top_level_by_title(
                     parsed_file['sections'],
-                    target_category=category,
+                    target_title=title,
                     matching_sections=matching_sections
                 )
 
         if not matching_sections:
-            requested = [f"{s.get('parent', 'TOP')} > {s['category']}" for s in section_refs]
-            return f"No sections found matching the requested categories: {', '.join(requested)}"
+            requested = [f"{s.get('parent_title', 'TOP')} > {s['title']}" for s in section_refs]
+            return f"No sections found matching the requested titles: {', '.join(requested)}"
 
         # Format sections with FULL content (proper RAG - no truncation)
         # Since analyze_query_sections returns max 3 sections, context size is manageable
@@ -353,7 +343,6 @@ def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
 
         for idx, section in enumerate(matching_sections, 1):
             title = section.get('title', 'Untitled')
-            category = section.get('category', 'unclassified')
             level = section.get('level', 1)
             page_num = section.get('page_num', 'Unknown')
             text = section.get('text', '[No content]')
@@ -386,127 +375,144 @@ SECTION {idx}: [{hierarchy_path}] (Page {page_num})
         return f"Error retrieving sections: {str(e)}"
 
 
-def _collect_categories_recursive(sections: List) -> Dict[str, set]:
+def get_section_hierarchy_structure(sections: List[Dict]) -> str:
     """
-    Recursively collect categories organized by top-level parent category.
+    Build a hierarchical structure representation of parsed_file sections for LLM prompt.
 
-    This preserves the hierarchy to avoid ambiguity when subsection names might
-    appear under different top-level sections.
+    This function creates a formatted string showing the actual section structure from
+    the prospectus, including titles and sample text. Used in SECTION_ANALYSIS_PROMPT
+    to help the LLM identify which sections are most relevant to a user's query.
 
-    Args:
-        sections: List of section dicts from parsed_file (top-level sections)
-
-    Returns:
-        Dictionary mapping top-level category -> set of subcategories under it
-        Example: {
-            'deal_summary': {'offered_certificates', 'payment_priority', 'key_dates'},
-            'risk_factors': {'prepayment_risk', 'interest_rate_risk'}
-        }
-        Top-level categories also include themselves in the result.
-    """
-    categories_by_parent = {}
-
-    for section in sections:
-        category = section.get('category')
-        level = section.get('level', 1)
-
-        if not category:
-            continue
-
-        # This is a top-level section (level 1)
-        if level == 1:
-            # Add top-level category as a key with itself
-            if category not in categories_by_parent:
-                categories_by_parent[category] = {category}  # Include itself
-
-            # Collect all subcategories under this top-level section
-            if 'sections' in section and section['sections']:
-                subcategories = _collect_subcategories(section['sections'])
-                categories_by_parent[category].update(subcategories)
-
-    return categories_by_parent
-
-
-def _collect_subcategories(sections: List) -> set:
-    """
-    Recursively collect all subcategories from nested sections.
-
-    Args:
-        sections: List of subsection dicts
-
-    Returns:
-        Set of all category values found in these sections and their descendants
-    """
-    subcategories = set()
-
-    for section in sections:
-        category = section.get('category')
-        if category:
-            subcategories.add(category)
-
-        # Recurse into deeper nested sections
-        if 'sections' in section and section['sections']:
-            deeper_subcats = _collect_subcategories(section['sections'])
-            subcategories.update(deeper_subcats)
-
-    return subcategories
-
-
-def _collect_matching_top_level_sections(
-    sections: List,
-    target_category: str,
-    matching_sections: List
-) -> None:
-    """
-    Collect top-level sections (level 1) that match the target category.
-    When a top-level section is matched, it includes all its subsections.
+    The output format uses actual section titles and content samples (not fixed categories),
+    making it flexible for any prospectus structure.
 
     Args:
         sections: List of top-level section dicts from parsed_file
-        target_category: Category value to match at level 1
-        matching_sections: List to accumulate matching section objects
+                 Each section should have: title, sample_text, and optionally subsections
+
+    Returns:
+        Formatted string representation of the hierarchy
+
+    Example output:
+        1. title: "SUMMARY"
+           sample_text: This prospectus relates to the issuance of certificates...
+           subsections:
+             1.1 title: "The Certificates"
+                sample_text: The following certificates are being offered...
+             1.2 title: "Priority of Distributions"
+                sample_text: On each distribution date, available funds...
+
+        2. title: "RISK FACTORS"
+           sample_text: Investment in the certificates involves risks...
+           subsections:
+             2.1 title: "Prepayment Risk"
+                sample_text: The rate of prepayment on the mortgage loans...
+    """
+    result = []
+
+    for idx, section in enumerate(sections, 1):
+        title = section.get('title', 'Untitled')
+        sample_text = section.get('sample_text', '')
+        subsections = section.get('sections', [])
+
+        # Format top-level section
+        result.append(f'{idx}. title: "{title}"')
+        if sample_text:
+            clean_sample = sample_text.replace('\n', ' ').strip()
+            if len(clean_sample) > 150:
+                clean_sample = clean_sample[:150] + "..."
+            result.append(f'   sample_text: {clean_sample}')
+
+        # Format subsections
+        if subsections:
+            result.append('   subsections:')
+            for sub_idx, subsection in enumerate(subsections, 1):
+                sub_title = subsection.get('title', 'Untitled')
+                sub_sample = subsection.get('sample_text', '')
+
+                result.append(f'     {idx}.{sub_idx} title: "{sub_title}"')
+                if sub_sample:
+                    clean_sub_sample = sub_sample.replace('\n', ' ').strip()
+                    if len(clean_sub_sample) > 120:
+                        clean_sub_sample = clean_sub_sample[:120] + "..."
+                    result.append(f'        sample_text: {clean_sub_sample}')
+
+        result.append('')  # Empty line between sections
+
+    return '\n'.join(result)
+
+
+def _collect_matching_top_level_by_title(
+    sections: List,
+    target_title: str,
+    matching_sections: List
+) -> None:
+    """
+    Collect top-level sections (level 1) that match the target title.
+
+    This function searches for sections by their actual title (not category).
+    When a top-level section is matched, the entire section including all its
+    subsections is added to matching_sections, providing complete context.
+
+    Args:
+        sections: List of top-level section dicts from parsed_file
+        target_title: Exact section title to match at level 1 (case-sensitive)
+        matching_sections: List to accumulate matching section objects (modified in place)
+
+    Returns:
+        None (modifies matching_sections in place)
     """
     for section in sections:
-        category = section.get('category')
+        title = section.get('title', '')
         level = section.get('level', 1)
 
-        # Only match level 1 sections
-        if level == 1 and category == target_category:
+        # Only match level 1 sections by title
+        if level == 1 and title == target_title:
             matching_sections.append(section)
-            # Note: When returning a top-level section, we include the entire section
-            # with all its subsections, so the user gets complete context
 
 
-def _collect_matching_subsections(
+def _collect_matching_subsections_by_title(
     sections: List,
-    parent_category: str,
-    target_category: str,
+    parent_title: str,
+    target_title: str,
     matching_sections: List
 ) -> None:
     """
-    Collect level 2 subsections that match the target category under a specific parent.
-    This ensures we only retrieve subsections from the correct parent hierarchy.
+    Collect level 2 subsections that match the target title under a specific parent.
+
+    This function ensures hierarchy-aware retrieval: if multiple sections across different
+    parents have the same subsection title, only the one under the specified parent is returned.
+    This prevents ambiguity and ensures accurate section retrieval.
+
+    The matched subsection gets a '_parent_title' field added for breadcrumb display.
 
     Args:
         sections: List of top-level section dicts from parsed_file
-        parent_category: Parent category to search within
-        target_category: Subcategory value to match at level 2
-        matching_sections: List to accumulate matching section objects
+        parent_title: Exact parent section title to search within (level 1)
+        target_title: Exact subsection title to match (level 2)
+        matching_sections: List to accumulate matching section objects (modified in place)
+
+    Returns:
+        None (modifies matching_sections in place)
+
+    Example:
+        If parent_title="SUMMARY" and target_title="Priority of Distributions",
+        this will find the "Priority of Distributions" subsection ONLY under "SUMMARY",
+        even if another section also has a subsection with the same name.
     """
     for section in sections:
-        parent_cat = section.get('category')
+        section_title = section.get('title', '')
         level = section.get('level', 1)
 
         # Find the parent section first (level 1)
-        if level == 1 and parent_cat == parent_category:
-            # Now search for the target subcategory within this parent's subsections
+        if level == 1 and section_title == parent_title:
+            # Now search for the target subsection within this parent's subsections
             if 'sections' in section and section['sections']:
-                parent_title = section.get('title', 'Untitled')
                 for subsection in section['sections']:
-                    sub_category = subsection.get('category')
-                    if sub_category == target_category:
+                    sub_title = subsection.get('title', '')
+                    if sub_title == target_title:
                         # Add parent title for breadcrumb display
-                        subsection['_parent_title'] = parent_title
+                        subsection['_parent_title'] = section_title
                         matching_sections.append(subsection)
 
 

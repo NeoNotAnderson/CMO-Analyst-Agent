@@ -713,13 +713,17 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
                 pos, last_processed_section = combine_sections(parent_section, next_index_section_title, page_sections, pos, last_processed_section)
             doc.close()
 
+        # Add sample_text to all sections for query analysis
+        if 'sections' in index:
+            add_sample_text_to_sections(index['sections'])
+
         prospectus.parsed_file = index
-        prospectus.parse_status = 'classifying'
+        prospectus.parse_status = 'completed'
         prospectus.save()
 
         num_sections = len(index.get('sections', []))
         print(f"[SUCCESS] Parsed and saved full prospectus with {num_sections} top-level sections")
-        print(f"[STATUS] Updated parse_status to: classifying")
+        print(f"[STATUS] Updated parse_status to: completed")
         return f"Successfully parsed and saved full prospectus with {num_sections} top-level sections to database."
 
     except Exception as e:
@@ -744,6 +748,42 @@ def add_page_number_to_parsed_sections(page_sections: List[Dict], page_number: i
         if isinstance(section, dict):
             section['page_num'] = page_number
     return page_sections
+
+
+def add_sample_text_to_sections(sections: List[Dict]) -> None:
+    """
+    Recursively add 'sample_text' field to all sections and subsections.
+
+    This function extracts the first 500 characters from each section's 'text' field
+    and stores it as 'sample_text'. This sample is used by the query agent to help
+    the LLM identify relevant sections without needing to process the full text.
+
+    The function processes all sections recursively (both level 1 and level 2 subsections).
+
+    Args:
+        sections: List of section dicts (modified in place)
+                 Each section should have a 'text' field
+                 May contain nested 'sections' for subsections
+
+    Returns:
+        None (modifies sections in place by adding 'sample_text' field to each section)
+
+    Side effects:
+        - Adds 'sample_text' field to each section (first 500 chars of 'text')
+        - If 'text' is empty, 'sample_text' will be an empty string
+    """
+    for section in sections:
+        if isinstance(section, dict):
+            # Add sample_text from the text field
+            text = section.get('text', '')
+            if text:
+                section['sample_text'] = text[:500]
+            else:
+                section['sample_text'] = ''
+
+            # Recursively process subsections
+            if 'sections' in section and section['sections']:
+                add_sample_text_to_sections(section['sections'])
 
 def build_prompt_for_parsing_pages_with_table(images: List[Dict]) -> Dict:
     """
@@ -1093,9 +1133,14 @@ def store_parsed_pages_in_db(prospectus: Prospectus, page_numbers: List[int], pa
         print(f"Error storing parsed pages in database: {e}")
         return False
 
-@tool
 def classify_and_build_section_map(prospectus_id: str) -> str:
     """
+    [DEPRECATED!!!]
+    in feature/parsing-agent we still use it
+    but in the master, it won't use section category at all
+    but use parsed file directly and during query analysis, 
+    we ask LLM to directly traverse the parsed file and chekck the title and sample text to figure out which sections are the most related.
+
     Classify all sections from parsed prospectus and enrich parsed_file with categories.
 
     This tool:

@@ -74,7 +74,6 @@ def run_agent(prospectus: Prospectus, config=None):
         - Check if parsing is already complete (use prospectus_id)
         - Parse index pages to understand document structure
         - Parse individual sections and pages
-        - Classify sections into standardized taxonomy (use prospectus_id)
         - Save results to database (use prospectus_id)
 
         IMPORTANT CONSTRAINTS:
@@ -92,20 +91,14 @@ def run_agent(prospectus: Prospectus, config=None):
              * Parse index images with OpenAI
            - If status is 'parsing_sections':
              * Call parse_prospectus_with_parsed_index (this is ONE tool call)
-           - If status is 'classifying':
-             * Call classify_and_build_section_map (REQUIRED - don't skip this!)
            - If status is 'completed':
              * Parsing is already done, report success
-
-        CRITICAL: After parse_prospectus_with_parsed_index completes, status becomes 'classifying'.
-        You MUST then call classify_and_build_section_map to finish the job.
-        The parsing is NOT complete until classify_and_build_section_map returns success and status is 'completed'.
 
         Think step by step and use the appropriate tools to complete the parsing task.
         Use the prospectus_id when calling tools that require it.
         """)
 
-    user_message = HumanMessage(content=f"Parse the CMO prospectus with ID {prospectus.prospectus_id}. Parsing consists of three steps: (1) parse the index to get the file structure, (2) parse the rest based on the index, (3) classify sections into standardized taxonomy and build section map. Use the tools provided and save results to database.")
+    user_message = HumanMessage(content=f"Parse the CMO prospectus with ID {prospectus.prospectus_id}. Parsing consists of two steps: (1) parse the index to get the file structure, (2) parse the rest based on the index, Use the tools provided and save results to database.")
     state = {
         'prospectus': prospectus,
         'messages': [system_message, user_message],

@@ -120,53 +120,47 @@ Return only the classification: "general_cmo" or "deal_specific"
 SECTION_ANALYSIS_PROMPT = """
 Given the user's query about a CMO prospectus, identify the 3 MOST relevant sections to answer the question.
 
-AVAILABLE CATEGORIES IN THIS PROSPECTUS (organized by hierarchy):
-{available_categories}
-
-HIERARCHY STRUCTURE EXPLANATION:
-- Lines starting with a category name followed by a colon are TOP-LEVEL parent categories
-- The comma-separated list after the colon contains SUBCATEGORIES under that parent
-- Example: "deal_summary: offered_certificates, payment_priority" means:
-  * "deal_summary" is a level 1 parent category
-  * "offered_certificates" and "payment_priority" are level 2 subcategories under deal_summary
+AVAILABLE SECTIONS IN THIS PROSPECTUS:
+{available_sections}
 
 User Query: {query}
 
 IMPORTANT SELECTION RULES:
 1. Return AT MOST 3 sections (ranked by relevance)
-2. Only select categories listed in AVAILABLE CATEGORIES above
-3. Be specific: Choose subcategories when possible rather than broad top-level categories
-4. NEVER return both a parent category AND its subcategories together
-   - If you select a top-level category (e.g., "deal_summary"), do NOT also select its subcategories
-   - If you need specific information, select only the relevant subcategories, not the parent
+2. Use the section titles and sample_text to determine relevance
+3. You can select top-level sections OR specific subsections
+4. Be specific: Choose subsections when the query needs specific information
+5. NEVER return both a parent section AND its subsections together
+   - If you select a top-level section, do NOT also select its subsections
+   - If you need specific information, select only the relevant subsections, not the parent
 
-Return a JSON with the 3 most relevant categories AND their parent information:
+Return a JSON with the 3 most relevant sections using their exact titles:
 {{
     "sections": [
         {{
-            "category": "category_name",
-            "parent": "parent_category_name or null if top-level"
+            "title": "exact section title",
+            "parent_title": "parent section title or null if top-level"
         }},
         ...
     ],
-    "reasoning": "Brief explanation of why these specific categories are most relevant"
+    "reasoning": "Brief explanation of why these specific sections are most relevant"
 }}
 
 Guidelines:
 - Limit to maximum 3 sections
-- For top-level categories, set "parent": null
-- For subcategories, include the parent category name
-- Be precise: prefer specific subcategories over broad top-level categories
-- Only use categories that actually exist in the AVAILABLE CATEGORIES list
-- Use exact category names (e.g., "payment_priority", not "Payment Priority")
+- Use exact titles as shown in AVAILABLE SECTIONS
+- For top-level sections, set "parent_title": null
+- For subsections, include the parent section title
+- Prefer subsections over top-level when query is specific
+- Base selection on both title and sample_text content
 
 Example response:
 {{
     "sections": [
-        {{"category": "payment_priority", "parent": "deal_summary"}},
-        {{"category": "offered_certificates", "parent": "deal_summary"}},
-        {{"category": "prepayment_risk", "parent": "risk_factors"}}
+        {{"title": "Priority of Distributions", "parent_title": "SUMMARY"}},
+        {{"title": "The Certificates", "parent_title": "SUMMARY"}},
+        {{"title": "Prepayment Risk", "parent_title": "RISK FACTORS"}}
     ],
-    "reasoning": "User is asking about payment structure and tranches, need payment priority, certificate details, and prepayment considerations"
+    "reasoning": "User is asking about payment structure and tranches, need distribution priority, certificate details, and prepayment considerations"
 }}
 """
