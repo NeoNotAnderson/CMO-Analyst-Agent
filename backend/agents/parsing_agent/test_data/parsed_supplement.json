@@ -105,115 +105,134 @@
                         "summary": "Classes of certificates offered with their initial principal amount, interest rate, designation, and CUSIP."
                     },
                     "title": "OFFERED CERTIFICATES",
-                    "page_num": 1
+                    "page_num": 1,
+                    "level": 2
                 },
                 {
                     "text": "J.P. Morgan Mortgage Trust 2003-A1 will be formed pursuant to a pooling and servicing agreement among the depositor, the master servicer, the securities administrator and the trustee. The certificates solely represent beneficial ownership interests in the trust fund created under the pooling and servicingagreement and not an interest in, or the obligation of, the depositor or any other person.",
                     "table": null,
                     "title": "THE TRUST",
-                    "page_num": 1
+                    "page_num": 1,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "Wachovia Bank, National Association, a national banking association, will act as trustee of the trust under the pooling and servicing agreement.",
                     "title": "THE TRUSTEE",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "All of the mortgage loans were originated by Cendant Mortgage Corporation. We refer you to \u201cDescription of the Mortgage Pools \u2500 Cendant Mortgage Corporation\u201d in this prospectus supplement for more information.",
                     "title": "THE ORIGINATOR",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "J.P. Morgan Mortgage Acquisition Corp., a Delaware corporation, has previously acquired the mortgage loans from the originator. On the closing date, J.P. Morgan Mortgage Acquisition Corp., as seller, will sell all of its interest in the mortgage loans to the depositor.",
                     "title": "THE SELLER",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "On the closing date, J.P. Morgan Acceptance Corporation I, a Delaware corporation, will assign all of its interest in the mortgage loans to the trustee for the benefit of certificateholders.",
                     "title": "THE DEPOSITOR",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "JPMorgan Chase Bank will maintain custody of the mortgage files relating to the mortgage loans on behalf of the trust.",
                     "title": "THE CUSTODIAN",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "Wells Fargo Bank Minnesota, National Association, a national banking association, will act as master servicer and securities administrator under the pooling and servicing agreement.",
                     "title": "THE MASTER SERVICER AND SECURITIES ADMINISTRATOR",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "Cendant Mortgage Corporation will service the mortgage loans pursuant to an existing purchasing and servicing agreement between the servicer and the seller. Pursuant to an assignment agreement, the rights of the seller under such purchase and servicing agreement will be assigned to the depositor, and the\ndepositor, in turn, will assign such rights to the trustee for the benefit of certificateholders.\nWe refer you to \u201cThe Servicer\u201d and \u201cServicing of the Mortgage Loans\u201d in this prospectus supplement for more information.",
                     "title": "THE SERVICER",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "October 1, 2003. The cut-off date is the date after which the trust fund will be entitled to receive all collections on and proceeds of the mortgage loans.",
                     "title": "CUT-OFF DATE",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "The 25th day of each month or, if such day is not a business day, the next business day thereafter, commencing in November 2003. Distributions on each distribution date will be made to certificateholders of record as of the related record date, except that the final distribution on the certificates will be made only upon presentment and surrender of the certificates at the corporate trust office of the trustee.",
                     "title": "DISTRIBUTION DATE",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "With respect to the Class 4-A-1 Certificates, the last business day preceding a distribution date (or the closing date, in the case of the first distribution date), unless such certificates are no longer book-entry certificates, in which case the record date is the last business day of the month preceding the month of a distribution date. With respect to all other classes of certificates, the record date will be last business day of the month preceding the month of a distribution date (or the closing date, in the case of the first distribution date).",
                     "title": "RECORD DATE",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 2,
                     "text": "On each distribution date, to the extent funds are available from the related mortgage pool (or all pools in the aggregate, in the case of the Class B-1, Class B-2 and Class B-3 Certificates), each Class of certificates will be entitled to receive accrued and unpaid interest determined on the basis of the outstanding class principal amount of such class immediately prior to such distribution date (or notional amount, in the case of the Class 4-A-6 Certificates), the applicable certificate interest rate and the related accrual period.\nFor each distribution date, the accrual period applicable to the Class 4-A-1 Certificates for a given distribution date, will be the period commencing onthe 25th day of the month immediately preceding the month in which such distribution date occurs (or in the case of the first distribution date, beginning on the closing date) and ending on the 24th day of the month in which such distribution date occurs. The accrual period applicable to all other classes of offered certificates will be the calendar month preceding the month in which the distribution date occurs. Interest on all classes of certificates for all accrual periods will be calculated and payable on the basis of a 360-day year consisting of twelve 30-day months.\nInterest payments will be allocated among certificateholders of a class of certificates on a pro rata basis.\nWe refer you to \u201cDescription of the Certificates \u2014 Distributions of Interest\u201d in this prospectus supplement for more information.",
                     "title": "DISTRIBUTIONS OF INTEREST",
-                    "page_num": 2
+                    "page_num": 2,
+                    "level": 2
                 },
                 {
                     "page": 3,
                     "text": "The amount of principal distributable on the certificates (other than the interest-only certificates) on any distribution date will be determined by (1) formulas that allocate portions of principal payments received on the mortgage loans among the different classes of certificates and (2) the amount of funds actually received on the mortgage loans and available to make distributions on the certificates. Funds actually received on the mortgage loans may consist of scheduled payments and unscheduled payments resulting from prepayments by borrowers, liquidation of defaulted mortgage loans or repurchases of mortgage loans under the circumstances described in this prospectus supplement.\nOn each distribution date, each class of certificates will receive principal payments in accordance with the priorities set forth in \u201cDescription of Certificates \u2014 Priority of Distributions\u201d and based on principal collections from the related mortgage pool for the related due period. .\nWe refer you to \u201cDescription of the Certificates \u2014 Distributions of Principal\u201d in this prospectus supplement and \u201cDescription of the Securities \u2013 Distributions on Securities\u201d in the prospectus for more information.",
                     "title": "DISTRIBUTIONS OF PRINCIPAL",
-                    "page_num": 3
+                    "page_num": 3,
+                    "level": 2
                 },
                 {
                     "page": 3,
                     "text": "The final scheduled distribution date for the offered certificates is the distribution date in October 2033, which is the distribution date in the month following\nthe scheduled maturity date for the latest maturing mortgage loan.",
                     "title": "FINAL SCHEDULED DISTRIBUTION DATE",
-                    "page_num": 3
+                    "page_num": 3,
+                    "level": 2
                 },
                 {
                     "page": 3,
                     "text": "In certain very limited circumstances relating to a pool\u2019s experiencing either rapid prepayments or disproportionately high realized losses, principal and interest collected from the other pool may be applied to pay principal or interest, or both, to the senior certificates of the pool experiencing such conditions.\nWe refer you to \u201cDescription of the Certificates \u2013 Limited Cross-Collateralization\u201d in this prospectus supplement for more information.",
                     "title": "LIMITED CROSS-COLLATERALIZATION",
-                    "page_num": 3
+                    "page_num": 3,
+                     "level": 2
                 },
                 {
                     "page": 3,
                     "text": "On any distribution date on or after the distribution date (the \u201cclean-up call date\u201d) on which the aggregate outstanding principal balance of the mortgage loans is equal to or less than 5% of the aggregate principal balance of the mortgage loans as of the cut-off date, as described herein, the depositor will have the option to purchase all of the mortgage loans and apply the proceeds to redeem the certificates at a price equal to 100% of the unpaid principal balance of the certificates, plus accrued and unpaid interest thereon.\nWe refer you to \u201cDescription of the Certificates \u2014 Optional Clean-Up Redemption of the Certificates\u201d in this prospectus supplement for more information.",
                     "title": "OPTIONAL CLEAN-UP REDEMPTION OF THE CERTIFICATES",
-                    "page_num": 3
+                    "page_num": 3,
+                    "level": 2
                 },
                 {
                     "page": 3,
                     "text": "Subordination. The subordinate classes of certificates will provide credit enhancement for the senior certificates. In addition, the Class B-1 Certificates will have a payment priority over the Class B-2, Class B-3, Class B-4, Class B-5 and Class B-6 Certificates; the Class B-2 Certificates will have a payment priority over the Class B-3, Class B-4, Class B-5 and Class B-6 Certificates; and the Class B-3 Certificates will have a payment priority over the Class B-4, Class B-5 and Class B-6 Certificates.\nIf the mortgage loans in any pool experience losses, then, generally, the principal amount of the subordinate class of certificates that is lowest in seniority and still outstanding will be reduced by the amount of those realized losses until the total outstanding principal balance of such class equals zero.If a loss has been allocated to reduce the principal amount of your class of certificates, you will receive no payment in respect of that reduction. If the applicable subordination of the subordinate certificates is insufficient to absorb losses, then the senior certificates relating to the mortgage pool incurring the realized losses will be allocated such losses and may never receive all of their principal payments, except that any realized losses on the pool 4 mortgage loans that would otherwise be allocated to the Class 4-A-4 Certificates will instead be allocated to the Class 4-A-5 Certificates.\nHowever, some losses, such as special hazard losses, bankruptcy losses, and fraud losses in excess of the amounts set forth in this prospectus supplement, are, in general, allocated pro rata to each affected class of certificates (other than the Class 4-A-6 Certificates) instead of first being allocated to the subordinated certificates. Unlike realized losses, any excess losses on the pool 4 mortgage loans will be allocated pro rata among all related classes of certificates, including the Class 4-A-4 Certificates, without any reallocation of excess losses on the mortgage loans to the Class 4-A-5 Certificates.\nWe refer you to \u201cRisk Factors \u2014 Potential Inadequacy of Credit Enhancement,\u201d \u201cDescription of the Certificates \u2014 Priority of Distributions\u201d and \u201c\u2014 Allocation of Losses\u201d in this prospectus supplement for more information.",
                     "title": "CREDIT ENHANCEMENT",
-                    "page_num": 3
+                    "page_num": 3,
+                    "level": 2
                 },
                 {
                     "page": 4,
                     "text": "Statistical Information. The statistical information on the mortgage loans presented herein is based on the principal balance of such mortgage loans as of October 1, 2003 (referred to herein as the \u201ccut-off date\u201d). Such information does not take into account defaults, delinquencies and prepayments that may have occurred with respect to the mortgage loans since such date. As a result, the statistical distribution of the characteristics in the final mortgage pools as of the closing date will vary from the statistical distribution of such characteristics as presented in this prospectus supplement, although such variance will not be material.\nGeneral. On the cut-off date, the assets of the trust fund consisted of approximately 540 mortgage loans with a total principal balance of approximately $269,634,762. The mortgage loans consist primarily of adjustable rate, conventional, fully amortizing, first lien residential mortgage loans, substantially all of which have an original term to stated maturity of 30 years.\nPool 1 Characteristics. As of the cut-off date, pool 1 consisted of approximately 228 mortgage loans having a total principal balance of approximately $119,257,130 (or approximately 44.23% of the aggregate cut-off date balance of the mortgage loans). The mortgage interest rates of all of the pool 1 mortgage loans adjust, commencing approximately seven years after origination, based on the six-month LIBOR index and substantially all of such mortgage loans have original terms to maturity of approximately 30 years.\nWith the exception of one mortgage loan, all of the pool 1 mortgage loans provide for payments of interest at the related mortgage interest rate, but no payments of principal, for a period of seven years following origination of such mortgage loan. Following such seven-year period, the monthly payment with respect to each such pool 1 mortgage loan will be increased to an amount sufficient to amortize the principal balance of such mortgage loan over its remaining 23-year term and to pay interest at the related mortgage interest rate.\nPool 2 Characteristics. As of the cut-off date, pool 2 consisted of approximately 98 mortgage loans having a total principal balance of approximately $40,629,684 (or approximately 15.07% of the aggregate cut-off date balance of the mortgage loans). The mortgage interest rates of all of the pool 2 mortgage loans adjust, commencing approximately seven years after origination, based on the 1-Year CMT index and substantially all of such mortgage loans have original terms to maturity of approximately 30 years.\nPool 3 Characteristics. As of the cut-off date, pool 3 consisted of approximately 31 mortgage loans having a total principal balance of approximately $13,971,903 (or approximately 5.18% of the aggregate cut-off date balance of the mortgage loans). The mortgage interest rates of all of the pool 3 mortgage loans adjust, commencing approximately ten years after origination, based on the 1-Year CMT index and substantially all of such mortgage loans have original terms to maturity of approximately 30 years.\nPool 4 Characteristics. As of the cut-off date, pool 4 consisted of approximately 183 mortgage loans having a total principal balance of approximately $95,776,044 (or approximately 35.52% of the aggregate cut-off date balance of the mortgage loans). The mortgage interest rates of all of the pool 4 mortgage loans adjust, commencing approximately ten years after origination, based onthe six-month LIBOR index and substantially all of such mortgage loans have original terms to maturity of approximately 30 years.\n\nWith the exception of one mortgage loan, all of the pool 4 mortgage loans provide for payments of interest at the related mortgage interest rate, but no payments of principal, for a period of ten years following origination of such mortgage loan. Following such ten-year period, the monthly payment with respect to each such pool 4 mortgage loan will be increased to an amount sufficient to amortize the principal balance of such mortgage loan over its remaining 20-year term and to pay interest at the related mortgage interest rate.\n\nWe refer you to \u201cDescription of the Mortgage Pools\u201d in this prospectus supplement for more information.",
                     "title": "THE MORTGAGE LOANS",
-                    "page_num": 4
+                    "page_num": 4,
+                    "level": 2
                 },
                 {
                     "text": "The following table summarizes the characteristics of the mortgage loans in the aggregate and by pool as of the cut-off date. Tabular information concerning the statistical characteristics of the mortgage loans in the aggregate and by mortgage pool as of the cut-off date can be found at \u201cDescription of the Mortgage Pools \u2014 Tabular Characteristics of the Mortgage Loans\u201d in this prospectus supplement.",
@@ -328,37 +347,43 @@
                         "summary": "Summary of mortgage loan characteristics by pool."
                     },
                     "title": "SUMMARY STATISTICAL DATA",
-                    "page_num": 5
+                    "page_num": 5,
+                    "level": 2
                 },
                 {
                     "text": "Approximately 11.57% and 12.23% of the pool 1 and pool 4 mortgage loans, respectively, in addition to being secured by real property, are secured by a security interest in a limited amount of additional collateral owned by the borrower or a third-party guarantor. Such additional collateral may no longer be required when the principal balance of such additional collateral mortgage loan is reduced to a predetermined amount set forth in the related pledge agreement or guaranty agreement, as applicable, or when the loan-to-value ratio for such additional collateral mortgage loan is reduced to the applicable loan-to-value ratio for such additional collateral mortgage loan by virtue of an increase in the appraised value of the mortgaged property as determined by the servicer.\n\nWe refer you to \u201cDescription of the Mortgage Pools \u2014 The Additional Collateral Loans\u201d for more information.",
                     "table": null,
                     "title": "ADDITIONAL COLLATERAL LOANS",
-                    "page_num": 5
+                    "page_num": 5,
+                    "level": 2
                 },
                 {
                     "text": "The master servicer will supervise the performance of the servicer under the purchase and servicing agreement.\n\nUnder the purchase and servicing agreement, the servicer is generally obligated to make monthly advances of cash (to the extent such advances are deemed recoverable), which will be included with mortgage principal and interest collections, in an amount equal to any delinquent monthly payments due on the mortgage loans on the immediately preceding determination date. The master servicer will be obligated to make any required advance if the servicer fails in its obligation to do so, to the extent described in this prospectus supplement. The master servicer and the servicer will be entitled to reimburse themselves for any such advances from future payments and collections (including insurance or liquidation proceeds) with respect to the mortgage loans. However, if the master servicer or the servicer make advances which are determined to be nonrecoverable from future payments and collections on the related mortgage loan, such parties will be entitled to reimbursement for such advances prior to any distributions to certificateholders.\n\nThe servicer will also make interest payments to compensate in part for any shortfall in interest payments on the certificates which results from a mortgagor prepaying a mortgage loan in whole. However, the amount of such payments will generally not exceed the servicing fee payable to the",
                     "table": null,
                     "title": "SERVICING OF THE MORTGAGE LOANS",
-                    "page_num": 5
+                    "page_num": 5,
+                    "level": 2
                 },
                 {
                     "text": "The trustee will elect to treat all or a portion of the assets of the trust fund as comprising multiple REMICs for federal income tax purposes. Each of the certificates, other than the Class A-R Certificate, will represent ownership of \u201cregular interests\u201d in a REMIC and the Class A-R Certificate will be designated as the sole class of \u201cresidual interest\u201d in the upper-tier REMIC.\n\nThere are restrictions on the types of investors that are permitted to purchase the Class A-R Certificate.\n\nWe refer you to \u201cMaterial Federal Income Tax Consequences\u201d in this prospectus supplement and in the prospectus for more information.",
                     "table": null,
                     "title": "MATERIAL FEDERAL INCOME TAX CONSEQUENCES",
-                    "page_num": 6
+                    "page_num": 6,
+                    "level": 2
                 },
                 {
                     "text": "Subject to important considerations described under \u201cERISA Matters\u201d in this prospectus supplement and \u201cERISA Considerations\u201d in the accompanying prospectus, the offered certificates, other than the Class A-R Certificate, will be eligible for purchase by persons investing assets of employee benefit plans or individual retirement accounts. The Class A-R Certificate will NOT be eligible for purchase by any such plan or account.\n\nWe refer you to \u201cERISA Matters\u201d in this prospectus supplement and \u201cERISA Considerations\u201d in the accompanying prospectus for more information.",
                     "table": null,
                     "title": "ERISA MATTERS",
-                    "page_num": 6
+                    "page_num": 6,
+                    "level": 2
                 },
                 {
                     "text": "Generally all of the certificates offered by this prospectus supplement (except the Class A-R, Class B-2 and Class B-3 Certificates) will constitute \u201cmortgage related securities\u201d for purposes of the Secondary Mortgage Market Enhancement Act of 1984.\n\nThere are other restrictions on the ability of certain types of investors to purchase the certificates that prospective investors should consider.",
                     "table": null,
                     "title": "LEGAL INVESTMENT",
-                    "page_num": 6
+                    "page_num": 6,
+                    "level": 2
                 },
                 {
                     "text": "The certificates offered by this prospectus supplement will initially have ratings at least as high as the following ratings from Moody\u2019s Investors Service, Inc., Standard & Poor\u2019s Ratings Services, a division of The McGraw-Hill Companies, Inc. and Fitch Ratings.",
@@ -440,7 +465,8 @@
                         "summary": "Initial ratings of the certificates from Moody\u2019s, S&P, and Fitch."
                     },
                     "title": "RATING OF THE CERTIFICATES",
-                    "page_num": 6
+                    "page_num": 6,
+                    "level": 2
                 }
             ],
             "text": "This summary highlights selected information from this prospectus supplement and does not contain all the information that you need to consider in making your investment decision. Please read this entire prospectus supplement and the accompanying prospectus carefully for additional information about the offered certificates."
@@ -454,66 +480,79 @@
                 {
                     "title": "Prepayments Are Unpredictable and Affect Yield",
                     "page_num": 7,
+                    "level": 2,
                     "text": "The rate of principal distributions and yield to maturity on the certificates will be directly related to the rate of principal payments on the mortgage loans of the related mortgage pool, in the case of the senior certificates, or the combined mortgage pools, in the case of the subordinate certificates. For example, the rate of principal payments on the mortgage loans will be affected by the following:\n\u2022\nthe amortization schedules of the mortgage loans;\n\u2022\nthe rate of principal prepayments, including partial prepayments and full prepayments resulting from:\n\u2022 refinancing by borrowers;\n\u2022\n\u2014\nliquidations of defaulted loans by the servicer; and\n\u2022 repurchases of mortgage loans by the originator as a result of defective documentation or breaches of representations and warranties.\nThe yield to maturity of the certificates will also be affected by the depositor\u2019s exercise of its optional clean-up redemption rights.\nAll of the mortgage loans may be prepaid in whole or in part at any time without payment of a prepayment penalty. The rate of principal payments on mortgage loans is influenced by a wide variety of economic, geographic, social and other factors, including general economic conditions, the level of prevailing interest rates, the availability of alternative financing and homeowner maturity. For example, if interest rates for similar loans fall below the interest rates on the mortgage loans, the rate of prepayment would generally be expected to increase. Conversely, if interest rates on similar loans rise above the interest rates on the mortgage loans, the rate of prepayment would generally be expected to decrease. We cannot predict the rate at which borrowers will repay their mortgage loans. Please consider the following:\n\u2022 if you are purchasing any offered certificate at a discount, your yield may be lower than expected if principal payments on the related mortgage loans occur at a slower rate than you expected;\n\u2022 if you are purchasing any offered certificate at a premium, your yield may be lower than expected if principal payments on the related mortgage loans occur at a faster rate than you expected, and you could lose your initial investment;\n\u2022\nif the rate of default and the amount of losses on the related mortgage loans are higher than you expect, then your yield may be lower than you expect;\n\u2022 the earlier a payment of principal occurs, the greater the impact on your yield. For example, if you purchase any offered certificate at a premium, although the average rate of principal payments is consistent with your expectations, if the rate of principal payments occurs initially at a rate higher than expected, which would adversely impact your yield, a subsequent reduction in the rate of principal payments will not offset any adverse yield effect;\u2022 the priorities governing payments of scheduled and unscheduled principal will have the effect of accelerating the rate of principal payments to holders of the classes of senior certificates relative to the classes of subordinate certificates; and\n\u2022 prospective purchasers of the Class 4-A-6 Certificates should carefully consider the risk that a rapid rate of principal payments on the related mortgage loans could result in the failure of such purchasers to recover their initial investments.\nSee \u201cYield, Prepayment and Weighted Average Life\u201d and \u201cDescription of the Certificates \u2014 Distributions of Principal\u201d in this prospectus supplement for a description of the factors that may influence the rate and timing of prepayments on the mortgage loans."
                 },
                 {
                     "title": "Mortgage Loans with Interest-only Payments and High Balance Loans",
                     "page_num": 8,
+                    "level": 2,
                     "text": "Approximately 79.37% of the mortgage loans provide for payment of interest at the related mortgage rate, but no payment of principal, for a period of seven or ten years following the origination of the related mortgage loan. Following the applicable interest-only period, the monthly payment with respect to each mortgage loan will be increased to an amount sufficient to amortize the principal balance of such mortgage loan over its remaining term, and to pay interest at the related mortgage interest rate.\nSuch interest-only mortgage loans will, absent other considerations, result in longer weighted average lives of the certificates when compared to certificates backed by fully amortizing mortgage loans. If you purchase a certificate at a discount, you should consider that the extension of its weighted average life could result in a lower yield than would be the case if such mortgage loans provided for payment of principal and interest on every distribution date. In addition, a borrower may view the absence of any obligation to make a payment of principal during the first seven or ten years of the term of the mortgage loan as a disincentive to prepayment.\nIf a recalculated monthly payment as described above is substantially higher than a borrower\u2019s previous interest-only monthly payment, that loan may also be subject to an increased risk of delinquency and loss.\nSee \u201cDescription of the Mortgage Pools\u201d in this prospectus supplement.\nAs of the cut-off date, the principal balances of approximately 7 of the mortgage loans in pool 1 (representing approximately 7.64% of the pool 1 cut-off date balance) and approximately 5 of the mortgage loans in pool 4 (representing approximately 9.10% of the pool 4 cut-off date balance) were in excess of $1,000,000. You should consider the risk that the loss and delinquency experience on these high balance loans may have a disproportionate effect on such mortgage pool."
                 },
                 {
                     "title": "Your Yield May Be Affected by Changes in Interest Rates",
                     "page_num": 8,
+                    "level": 2,
                     "text": "No prediction can be made as to future levels of six-month LIBOR (the applicable index in determining the mortgage interest rate for all of the mortgage loans in pool 1 and pool 4) and 1-Year CMT (the applicable index in determining the mortgage interest rate for all of the mortgage loans in pool 2 and pool 3) or as to the timing of any changes therein, each of which will directly affect the yields of the certificates.\nSee \u201cDescription of the Certificates \u2014 Distributions of Interest\u201d in this prospectus supplement."
                 },
                 {
                     "title": "Limited Cross-Collateralization Among The Mortgage Pools; Limited Recourse",
                     "page_num": 8,
+                    "level": 2,
                     "text": "With very limited exception described in \u201cDescription of the Certificates \u2014 Limited Cross-Collateralization,\u201d interest and principal on the senior certificates will be allocated based on amounts collected in respect of the mortgage loans in the related mortgage pool. In the case of the senior certificates, the mortgage pools will generally not be \u201ccross-collateralized\u201d \u2014 interest and principal collections received from the mortgage loans in a pool will only be available for distribution to the related certificates and not to the senior certificates related to the other pool. For example, collections from pool 1 will generally only be available to makedistributions to the Class 1-A-1 and Class A-R Certificates, but not to the Class 2-A-1, Class 3-A-1, Class 4-A-1, Class 4-A-2, Class 4-A-3, Class 4-A-4, Class 4-A-5 or Class 4-A-6 Certificates; and collections from all mortgage pools will be available to make distributions to the subordinate certificates.\nBecause the subordinate certificates represent interests in all mortgage pools, the class principal amounts of the subordinate certificates could be reduced to zero as a result of realized losses on the mortgage loans in any one pool. Therefore, the allocation of realized losses on the mortgage loans in any one pool to the subordinate certificates will reduce the subordination provided by the subordinate certificates to all of the senior certificates, including the senior certificates related to the mortgage pool that did not suffer any losses. This will increase the likelihood that future realized losses may be allocated to the senior certificates related to the mortgage pool that did not suffer those previous losses.\nNeither the certificates nor the assets of the trust fund will be guaranteed by the depositor, the seller, the master servicer, the servicer, the trustee or any of their respective affiliates or insured by any governmental agency. Consequently, if collections on the related mortgage loans are insufficient to make all payments required on the certificates and the protection against losses provided by subordination is exhausted, you may incur a loss on your investment."
                 },
                 {
                     "title": "Potential Inadequacy of Credit Enhancement",
                     "page_num": 9,
+                    "level": 2,
                     "text": "The certificates are not insured by any financial guaranty insurance policy. The subordination and loss allocation features described in this prospectus supplement are intended to enhance the likelihood that holders of more senior classes of certificates will receive regular payments of interest and principal, but are limited in nature and may be insufficient to cover all losses on the mortgage loans.\nThe amount of any realized losses, other than excess losses, experienced on a mortgage loan will be applied to reduce the principal amount of the class of subordinate certificates with the highest numerical class designation, until the principal balance of that class has been reduced to zero. If subordination is insufficient to absorb losses, then holders of more senior classes will incur realized losses and may never receive all of their principal payments. You should consider the following:\n\u2022 if you buy a Class B-3 Certificate and losses on the mortgage loans exceed the total principal amount of the Class B-4, Class B-5 and Class B-6 Certificates, the principal amount of your certificate will be reduced proportionately with the principal amount of the other Class B-3 Certificates by the amount of that excess;\n\u2022 if you buy a Class B-2 Certificate and losses on the mortgage loans exceed the total principal amount of the Class B-3, Class B-4, Class B-5 and Class B-6 Certificates, the principal amount of your certificate will be reduced proportionately with the principal amount of the other Class B-2 Certificates by the amount of that excess;\n\u2022 if you buy a Class B-1 Certificate and losses on the mortgage loans exceed the total principal amount of the Class B-2, Class B-3, Class B-4, Class B-5 and Class B-6 Certificates, the principal amount of your certificate will be reduced proportionately with the principal amount of the other Class B-1 Certificates by the amount of that excess; and\n\u2022 after the total class principal amount of the subordinate certificates has been reduced to zero, realized losses on the mortgage loans realized by any mortgage pool will reduce the class principal amounts of the related senior certificates, except that any realized losses on the pool 4 mortgage loans that would otherwise be allocated to the Class 4-A-4 Certificates will instead be allocated to the Class 4-A-5 Certificates. See \u201cDescription of the Certificates \u2014 Priority of Distributions\u201d and \u201c\u2014 Allocation of Losses\u201d in this prospectus supplement.\nFurthermore, the subordinate certificates will provide only limited protection against some categories of losses such as special hazard losses, bankruptcy losses and fraud losses in excess of the amountsspecified in this prospectus supplement. Any losses on the mortgage loans in a loan group in excess of those amounts will be allocated pro rata among each class of senior certificates (other than the Class 4-A-6 Certificates) related to that loan group and each class of subordinate certificates, even if the principal of each subordinate class has not been reduced to zero. You should note that it is possible that a disproportionate amount of coverage for these types of losses may be experienced by one loan group which could make certificates related to the other loan groups more likely to suffer a loss. See \u201cDescription of the Certificates \u2014 Allocation of Losses\u201d in this prospectus supplement."
                 },
                 {
                     "title": "Cash Flow Considerations and Risks",
                     "page_num": 10,
+                    "level": 2,
                     "text": "The related mortgage loans, the related mortgaged property and additional collateral and other assets of the trust fund are the sole source of payments on the certificates. Even if the mortgaged properties provide adequate security for the mortgage loans, you could encounter substantial delays in connection with the liquidation of mortgage loans that are delinquent. This could result in shortfalls in payments on the certificates if the credit enhancement provided by subordination is insufficient. Further, liquidation expenses, such as legal fees, real estate taxes and maintenance and preservation expenses, will reduce the security for the related mortgage loans and could thereby reduce the proceeds payable to certificateholders. If any of the mortgaged properties and additional collateral fail to provide adequate security for the related mortgage loans, certificateholders could experience a loss if the credit enhancement created by the subordination has been exhausted."
                 },
                 {
                     "title": "Concentration of Mortgage Loans Could Adversely Affect Your Investment",
                     "page_num": 10,
+                    "level": 2,
                     "text": "Approximately 19.07%, 19.59%, 35.19% and 20.97% of the aggregate principal balance of the mortgage loans included in pool 1, pool 2, pool 3 and pool 4, respectively, are secured by mortgaged properties located in California. In addition, approximately 14.10%, 12.11%, 20.75% and 10.89% of the aggregate principal balance of the mortgage loans included in pool 1, pool 2, pool 3 and pool 4, respectively, are secured by mortgaged properties located in New Jersey. Consequently, losses and prepayments on the mortgage loans in a particular pool and the resultant payments on the related certificates may be affected significantly by changes in the housing markets and the regional economies in these areas and by the occurrence of natural disasters, such as earthquakes, hurricanes, tornadoes, tidal waves, mud slides, fires and floods in these areas.\nSee \u201cDescription of the Mortgage Pools \u2014 Tabular Characteristics of the Mortgage Loans\u201d in this prospectus supplement.\nprospectus supplement."
                 },
                 {
                     "title": "Military Action and Terrorist Attacks",
                     "page_num": 10,
+                    "level": 2,
                     "text": "The effects that military action by U.S. forces in Iraq or other regions and terrorist attacks in the United States or other incidents and related military action, may have on the performance of the mortgage loans or on the values of mortgaged properties cannot be determined at this time. Investors should consider the possible effects on delinquency, default and prepayment experience of the mortgage loans. Federal agencies and non-government lenders have and may continue to defer, reduce or forgive payments and delay foreclosure proceedings in respect of loans to borrowers affected in some way by recent and possible future events. In addition, activation of a substantial number of U.S. military reservists or members of the National Guard may significantly increase the proportion of mortgage loans whose mortgage rates are reduced by application of the Soldiers\u2019 and Sailors\u2019 Civil Relief Act of 1940 or similar state laws, and neither the master servicer nor the servicer will be required to advance for any interest shortfall caused by any such reduction. Shortfalls in interest may result from the application of the Soldiers\u2019 and Sailors\u2019 Civil Relief Act of 1940 or similar state laws. Interest payable to senior and subordinate certificateholders will be reduced on a pro rata basis by any reductions in the amount of interest collectible as a result of application of the Soldiers\u2019 and Sailors\u2019 Civil Relief Act of 1940 or similar state laws."
                 },
                 {
                     "title": "Ability To Resell Securities May Be Limited",
                     "page_num": 10,
+                    "level": 2,
                     "text": "There is currently no market for any of the certificates and the underwriter is not required to assist investors in resales of the offered certificates, although it may do so. We cannot assure you that a secondary market will develop, or if it does develop, that it will continue to exist for the term of the certificates. Consequently, youmay not be able to sell your certificates readily or at prices that will enable you to realize your desired yield. The market values of the certificates are likely to fluctuate; these fluctuations may be significant and could result in significant losses to you.\nThe secondary market for mortgage pass-through certificates has experienced periods of illiquidity and can be expected to do so in the future. Illiquidity can have a severe adverse effect on the prices of certificates that are especially sensitive to prepayment, credit or interest rate risk, or that have been structured to meet the investment requirements of limited categories of investors."
                 },
                 {
                     "title": "Consequences of Owning Book-Entry Securities",
                     "page_num": 11,
+                    "level": 2,
                     "text": "Limit on Liquidity of Securities. Issuance of the certificates in book-entry form may reduce their liquidity in the secondary trading market because investors may be unwilling to purchase certificates for which they cannot obtain physical certificates.\nLimit on Ability To Transfer or Pledge. Since transactions in the book-entry certificates can be effected only though the DTC, participating organizations, indirect participants and certain banks, your ability to transfer or pledge a book-entry certificate to persons or entities that do not participate in the DTC system or otherwise to take actions in respect of such certificates, may be limited due to lack of physical certificates.\nDelays In Payments. You may experience some delay in the receipt of payments on book-entry certificates because the payment will be forwarded by the securities administrator on behalf of the trustee to DTC for DTC to credit the accounts of its participants which will thereafter credit them to your account either directly or indirectly through indirect participants, as applicable."
                 },
                 {
                     "title": "Delinquencies May Adversely Affect Investment",
                     "page_num": 11,
+                    "level": 2,
                     "text": "The mortgage loans were either originated or acquired in accordance, generally, with the underwriting guidelines described in this prospectus supplement. We cannot assure you that the values of the mortgaged properties have remained or will remain at levels in effect on the date of origination of the related mortgage loans."
                 },
                 {
                     "title": "You Could Be Adversely Affected By Violations of Consumer Protection Laws",
                     "page_num": 11,
+                    "level": 2,
                     "text": "Applicable state laws generally regulate interest rates and other charges and require certain disclosures. In addition, state and federal consumer protection laws, unfair and deceptive practices acts and debt collection practices acts may apply to the origination or collection of the mortgage loans. Depending on the provisions of the applicable law, violations of these laws may limit the ability of the servicer to collect all or part of the principal of or interest on the mortgage loans, may entitle the borrower to a refund of related amounts previously paid and, in addition, could subject the master servicer or the servicer to damages and administrative enforcement.\nThe Federal Home Ownership and Equity Protection Act of 1994, commonly known as HOEPA, prohibits inclusion of some provisions in mortgage loans that have mortgage rates or origination costs in excess of prescribed levels, and requires that borrowers be given certain disclosures prior to the consummation of such mortgage loans. Some states, as in the case of Georgia\u2019s Fair Lending Act of 2002, have enacted, or may enact, similar laws or regulations, which in some case impose restrictions and requirements greater than those in HOEPA. Failure to comply with these laws, to the extent applicable to any of the mortgage loans, could subject the trust as an assignee of the mortgage loans, to monetary penalties and could result in the borrowers rescinding such mortgage loans against the trust. Lawsuits have been brought in various states making claims against assignees of high cost loans for violations of state law. Named defendants in these cases have included numerous participants within the secondary mortgage market, including some securitization trusts. The originator has warranted that the mortgage loans do not include any mortgage loan in violation of HOEPA or similar state laws. However, if the trust fundshould include loans subject to HOEPA or in material violation of similar state laws, it will have repurchase remedies against the originator.\nSee \u201cMaterial Legal Aspects of the Loans\u201d in the accompanying prospectus."
                 },
                 {
                     "title": "Bankruptcy and Insolvency Risks",
                     "page_num": 12,
+                    "level": 2,
                     "text": "It is believed that the transfer of the mortgage loans from the seller to the depositor and from the depositor to the trust will each be treated as a sale rather than a secured financing for purposes of state law. Counsel for the seller and the depositor will render an opinion on the closing date that in the event of the bankruptcy of either the seller or the depositor, the mortgage loans and other assets of the trust fund would not be considered part of the seller\u2019s or depositor\u2019s bankruptcy estates and, thus, would not be available to their creditors. On the other hand, a bankruptcy trustee or one of the creditors of the seller or the depositor might challenge this conclusion and argue that the transfer of the mortgage loans should be characterized as a pledge of assets in a secured borrowing rather than as a sale. Such an attempt, even if unsuccessful, might result in delays in distributions on the certificates."
                 }
             ],
@@ -544,6 +583,7 @@
                 {
                     "title": "\u201cOriginator\u201d).",
                     "page_num": 13,
+                    "level": 2,
                     "text": "Certain general information with respect to the Mortgage Loans is set forth below. Prior to the Closing Date, Mortgage Loans may be removed from the Trust Fund and other mortgage loans may be substituted therefor. The Depositor believes that the information set forth herein with respect to the Mortgage Loans as presently constituted is representative of the characteristics of the Mortgage Loans as they will be constituted at the Closing Date, although the numerical data and certain other characteristics of the Mortgage Loans described herein may vary within a range of plus or minus 5%.None of the Mortgage Loans will be guaranteed by any governmental agency. Pursuant to an assignment, assumption and recognition agreement (the \u201cAssignment Agreement\u201d) between the Depositor, the Seller and the Trustee, on behalf of the Trust, the Seller and the Depositor will assign to the Trustee their respective interests in the underlying mortgage loan flow purchase, sale and servicing agreement (the \u201cPurchase and Servicing Agreement\u201d) with respect to the Mortgage Loans originally entered into between the Seller and the Originator.\nThe Mortgage Loans have been acquired by the Seller from the Originator in the ordinary course of its business pursuant to an agreement. All of the Mortgage Loans were underwritten by the Originator substantially in accordance with the underwriting criteria specified herein. See \u201c\u2014Underwriting Standards\u201d below. Cendant will service the Mortgage Loans pursuant to an existing Purchase and Servicing Agreement with the Seller, which agreement, as it relates to the Mortgage Loans, has been assigned to the Trustee.\nAll of the Mortgage Loans provide for payments due on the first day of each month (the \u201cDue Date\u201d). Due to the provisions for monthly advances by the Servicer, scheduled payments made by the borrowers either earlier or later than the scheduled Due Dates thereof will not affect the amortization schedule or the relative application of such payments to principal and interest. None of the Mortgage Loans include prepayment penalties for early voluntary prepayments in full or in part.\nThe Mortgage Loans were originated from March 2002 through August 2003. No more than approximately 2% of the Mortgage Loans are secured by Mortgaged Properties located in any one zip code area. The latest stated maturity date of any Mortgage Loan is September 2033.\nAs of the Cut-off Date, none of the Mortgage Loans was more than 30 days delinquent.\nAs of the Cut-off Date, the weighted average current Mortgage Rate of the Mortgage Loans is approximately 4.893% per annum, the weighted average margin is approximately 2.152% per annum and the weighted average remaining term to maturity is approximately 357 months. As of the Cut-off Date, with respect to the Pool 1 Mortgage Loans and the Pool 4 Mortgage Loans, the weighted average remaining interest only term is approximately 97 months.\nNo Mortgage Loan had a Loan-to-Value Ratio at origination of more than 100.00%. Approximately 2.13% of the Mortgage Loans had an Effective Loan-to-Value Ratio at origination of greater than 80%, and such Mortgage Loans are covered by a primary mortgage insurance policy. Mortgage Loans with Loan-to-Value Ratios greater than 80% at origination, in addition to being secured by real property, may be secured by a security interest in a limited amount of additional collateral owned by the borrower or are supported by a third-party guarantee as described at \u201c\u2014 The Additional Collateral Loans\u201d below.\nThe \u201cLoan-to-Value Ratio\u201d of a Mortgage Loan at any given time is a fraction, expressed as a percentage, the numerator of which is the principal balance of the related Mortgage Loan at the date of determination and the denominator of which is (a) in the case of a purchase, the lesser of the selling price of the Mortgaged Property and its appraised value determined in an appraisal obtained by the originator at origination of such Mortgage Loan, or (b) in the case of a refinance, the appraised value of the Mortgaged Property at the time of such refinance. No assurance can be given that the value of any Mortgaged Property has remained or will remain at the level that existed on the appraisal or sales date. If residential real estate values generally or in a particular geographic area decline, the Loan-to-Value Ratios might not be a reliable indicator of the rates of delinquencies, foreclosures and losses that could occur with respect to such Mortgage Loans. The \u201cEffective Loan-to-Value Ratio\u201d means a fraction, expressed as a percentage, the numerator of which is the original Stated Principal Balance of the related Mortgage Loan, less the amount secured by the Additional Collateral required at the time of origination, if any, and the denominator of which is the appraised value of the related Mortgaged Property at such time, or in the case of a Mortgage Loan financing the acquisition of the Mortgaged Property, the sales price of the Mortgaged Property if such sales price is less than such appraised value.\nAs set forth in the \u201cCredit Scores\u201d table below, credit scores have been supplied with respect to the mortgagors. Credit scores are obtained by many mortgage lenders in connection with mortgage loan applications to help assess a borrower\u2019s credit-worthiness. Credit scores are generated by models developed by a third party which analyzed data on consumers in order to establish patterns which are believed to be indicative of theborrower\u2019s probability of default. The credit score is based on a borrower\u2019s historical credit data, including, among other things, payment history, delinquencies on accounts, levels of outstanding indebtedness, length of credit history, types of credit, and bankruptcy experience. Credit scores range from approximately 250 to approximately 900, with higher scores indicating an individual with a more favorable credit history compared to an individual with a lower score. However, a credit score purports only to be a measurement of the relative degree of risk a borrower represents to a lender, i.e., that a borrower with a higher score is statistically expected to be less likely to default in payment than a borrower with a lower score. In addition, it should be noted that credit scores were developed to indicate a level of default probability over a two-year period which does not correspond to the life of a mortgage loan. Furthermore, credit scores were not developed specifically for use in connection with mortgage loans, but for consumer loans in general. Therefore, a credit score does not take into consideration the effect of mortgage loan characteristics (which may differ from consumer loan characteristics) on the probability of repayment by the borrower. There can be no assurance that a credit score will be an accurate predictor of the likely risk or quality of the related mortgage loan."
                 },
                 {
@@ -675,7 +715,8 @@
                             }
                         ]
                     },
-                    "page_num": 60
+                    "page_num": 60,
+                    "level": 2
                 },
                 {
                     "page": "S-62",

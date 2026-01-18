@@ -44,10 +44,13 @@ class SectionClassifier:
         Classify all sections and enrich parsed_file with category/confidence in-place.
 
         This method adds 'category' and 'confidence' fields to each section in parsed_file.
+        Parsed files only have 2 levels: level 1 (top-level) and level 2 (subsections).
+        Subsections do not have further subsections.
 
         Example:
             Section (level=1, title="SUMMARY") -> category="deal_summary"
-        
+            Section (level=2, title="Offered Certificates", parent="SUMMARY") -> category="offered_certificates"
+
         Args:
             prospectus: Prospectus object with parsed_file containing all sections
 
@@ -66,9 +69,10 @@ class SectionClassifier:
         classified_count = 0
         unclassified_count = 0
 
-        # Classify each section and add fields in-place
+        # Classify each level 1 section
         for section in sections:
-            self._classify_and_enrich_section(section)
+            # Classify the level 1 section
+            self._classify_and_enrich_section(section, parent_category=None, is_subsection=False)
 
             # Count results
             if section.get('category'):
@@ -76,14 +80,23 @@ class SectionClassifier:
             else:
                 unclassified_count += 1
 
-            # Recursively classify subsections if they exist
+            # Classify level 2 subsections if they exist
             if 'sections' in section and section['sections']:
-                sub_classified, sub_unclassified = self._classify_subsections(section['sections'])
-                classified_count += sub_classified
-                unclassified_count += sub_unclassified
+                # Pass parent's category to constrain subcategory choices
+                parent_cat = SectionCategory(section['category']) if section.get('category') else None
+
+                for subsection in section['sections']:
+                    self._classify_and_enrich_section(subsection, parent_category=parent_cat, is_subsection=True)
+
+                    # Count results
+                    if subsection.get('category'):
+                        classified_count += 1
+                    else:
+                        unclassified_count += 1
 
         # Save the enriched parsed_file back to the prospectus
         prospectus.parsed_file = parsed_file
+        prospectus.parse_status = 'completed'
         prospectus.save(update_fields=['parsed_file'])
 
         # Return metadata
@@ -95,91 +108,73 @@ class SectionClassifier:
             'prospectus_id': str(prospectus.prospectus_id)
         }
 
-    def _classify_and_enrich_section(self, section: Dict) -> None:
+    def _classify_and_enrich_section(self, section: Dict, parent_category: Optional[SectionCategory] = None, is_subsection: bool = False) -> None:
         """
         Classify a single section and add category/confidence fields to it in-place.
 
         Args:
             section: Section dict from parsed_file (modified in-place)
+            parent_category: Parent section's category for hierarchy constraint
         """
         title = section.get('title', '')
-        level = section.get('level', 1)
+        # in case some sections don't have 'level'
+        level = 2 if is_subsection else 1
+        section['level'] = level
         page_start = section.get('page_num', 0)
 
         # Get content sample from section text (first 400 chars)
         section_text = section.get('text', '')
         content_sample = section_text[:400] if section_text else ''
 
-        # Classify the section
+        # Classify the section with hierarchy constraint
         category, confidence = self._classify_single_section(
             title=title,
             level=level,
             page_num=page_start,
-            content_sample=content_sample
+            content_sample=content_sample,
+            parent_category=parent_category
         )
 
         # Add classification fields to the section dict (only category and confidence)
         section['category'] = category.value if category else None
         section['confidence'] = float(confidence) if confidence > 0 else 0.0
 
-    def _classify_subsections(self, subsections: List[Dict]) -> Tuple[int, int]:
-        """
-        Recursively classify subsections.
-
-        Args:
-            subsections: List of subsection dicts (modified in-place)
-
-        Returns:
-            Tuple of (classified_count, unclassified_count)
-        """
-        classified = 0
-        unclassified = 0
-
-        for subsection in subsections:
-            self._classify_and_enrich_section(subsection)
-
-            # Count
-            if subsection.get('category'):
-                classified += 1
-            else:
-                unclassified += 1
-
-            # Recurse deeper if needed
-            if 'sections' in subsection and subsection['sections']:
-                sub_classified, sub_unclassified = self._classify_subsections(subsection['sections'])
-                classified += sub_classified
-                unclassified += sub_unclassified
-
-        return (classified, unclassified)
 
     def _classify_single_section(
         self,
         title: str,
         level: int,
         page_num: int,
-        content_sample: Optional[str] = None
+        content_sample: Optional[str] = None,
+        parent_category: Optional[SectionCategory] = None
     ) -> Tuple[Optional[SectionCategory], float]:
         """
-        Classify a single section using rule-based and LLM methods.
+        Classify a single section using rule-based and LLM methods with hierarchy constraint.
 
         Args:
             title: Section title
             level: Hierarchy level
             page_num: Starting page number
             content_sample: Sample content from the section (optional)
+            parent_category: Parent section's category for hierarchy constraint
 
         Returns:
             Tuple of (category, confidence_score)
         """
-        # Step 1: Try rule-based matching (exact then fuzzy)
-        mapping, confidence = self._rule_based_match(title)
+        # Get allowed categories based on hierarchy
+        from .section_taxonomy import get_allowed_categories
+        allowed_categories = get_allowed_categories(level, parent_category)
+
+        # Step 1: Try rule-based matching (exact then fuzzy) with hierarchy filter
+        mapping, confidence = self._rule_based_match(title, allowed_categories)
 
         # Step 2: If confidence < 0.85, use LLM classification
         if confidence < 0.85 and self.llm_client and content_sample:
             llm_category, llm_confidence = self._llm_classify(
                 title=title,
                 content_sample=content_sample,
-                context={'level': level, 'page_num': page_num}
+                context={'level': level, 'page_num': page_num, 'parent_category': parent_category},
+                allowed_categories=allowed_categories
             )
             # Use LLM result if it has higher confidence
             if llm_confidence > confidence:
@@ -193,14 +188,16 @@ class SectionClassifier:
 
     def _rule_based_match(
         self,
-        title: str
+        title: str,
+        allowed_categories: set
     ) -> Tuple[Optional[SectionMapping], float]:
         """
-        Attempt to match section using rule-based methods.
+        Attempt to match section using rule-based methods with hierarchy constraint.
         Only uses exact and fuzzy matching.
 
         Args:
             title: Section title to match
+            allowed_categories: Set of allowed SectionCategory values based on hierarchy
 
         Returns:
             Tuple of (SectionMapping, confidence_score)
@@ -213,6 +210,10 @@ class SectionClassifier:
         best_confidence = 0.0
 
         for mapping in self.section_mappings:
+            # Skip if this category is not allowed by hierarchy
+            if mapping.category not in allowed_categories:
+                continue
+
             # 1. Exact title match (confidence: 0.95-1.0)
             for common_title in mapping.common_titles:
                 if title_normalized == common_title.upper():
@@ -239,7 +240,8 @@ class SectionClassifier:
         self,
         title: str,
         content_sample: str,
-        context: Optional[Dict] = None
+        context: Optional[Dict] = None,
+        allowed_categories: Optional[set] = None
     ) -> Tuple[Optional[SectionCategory], float]:
         """
         Use LLM to classify section when rule-based methods fail.
@@ -248,6 +250,7 @@ class SectionClassifier:
             title: Section title
             content_sample: Sample content from section
             context: Additional context (parent section, etc.)
+            allowed_categories: Set of allowed categories based on hierarchy
 
         Returns:
             Tuple of (category, confidence_score)
@@ -255,8 +258,8 @@ class SectionClassifier:
         if not self.llm_client:
             return (None, 0.0)
 
-        # Build classification prompt
-        prompt = self._build_classification_prompt(title, content_sample, context)
+        # Build classification prompt with hierarchy constraint
+        prompt = self._build_classification_prompt(title, content_sample, context, allowed_categories)
 
         try:
             # Call GPT-5-NANO with structured output
@@ -272,10 +275,18 @@ class SectionClassifier:
             category_str = result.get('category')
             confidence = float(result.get('confidence', 0.0))
 
-            # Convert string to enum
-            category = SectionCategory(category_str) if category_str else None
+            # Require confidence >= 0.8, otherwise treat as None
+            # Less information is better than wrong information
+            if not category_str or confidence < 0.8:
+                return (None, 0.0)
 
-            return (category, confidence)
+            # Convert string to enum
+            try:
+                category = SectionCategory(category_str)
+                return (category, confidence)
+            except ValueError:
+                print(f"LLM classification error: '{category_str}' is not a valid SectionCategory")
+                return (None, 0.0)
 
         except Exception as e:
             print(f"LLM classification error: {e}")
@@ -285,36 +296,53 @@ class SectionClassifier:
         self,
         title: str,
         content_sample: str,
-        context: Optional[Dict] = None
+        context: Optional[Dict] = None,
+        allowed_categories: Optional[set] = None
     ) -> str:
         """
-        Build prompt for LLM classification.
+        Build prompt for LLM classification with hierarchy constraint.
 
         Args:
             title: Section title
             content_sample: Sample content
             context: Additional context
+            allowed_categories: Set of allowed categories based on hierarchy
 
         Returns:
             Formatted prompt string
         """
-        # Build taxonomy description
-        categories_desc = "\n".join([
-            f"- {cat.value}: {cat.name}" for cat in SectionCategory
-        ])
+        # Build taxonomy description - only allowed categories
+        # Format: "- category_value" (LLM should return the value, not the name)
+        if allowed_categories:
+            categories_desc = "\n".join([
+                f"- {cat.value}" for cat in allowed_categories
+            ])
+        else:
+            categories_desc = "\n".join([
+                f"- {cat.value}" for cat in SectionCategory
+            ])
+
+        # Add parent context if available
+        parent_info = ""
+        if context and context.get('parent_category'):
+            parent_cat = context['parent_category']
+            parent_info = f"\nParent Section Category: {parent_cat.value if isinstance(parent_cat, SectionCategory) else parent_cat}"
 
         prompt = f"""You are classifying sections from a CMO prospectus document.
 
-AVAILABLE CATEGORIES:
+ALLOWED CATEGORIES FOR THIS SECTION:{parent_info}
 {categories_desc}
 
 SECTION TO CLASSIFY:
 Title: {title}
+Level: {context.get('level') if context else 'unknown'}
 Content Sample: {content_sample[:500]}
 
-{"Context: " + json.dumps(context) if context else ""}
+IMPORTANT: You MUST select a category from the allowed list above based on the section's hierarchy level.
+- Level 1 sections can only be top-level categories (deal_summary, risk_factors, etc.)
+- Level 2+ sections can only be subcategories under their parent category
 
-Classify this section into the most appropriate category.
+Classify this section into the most appropriate category from the ALLOWED list.
 Return your response as JSON with the following format:
 {{
     "category": "category_value",
@@ -322,8 +350,7 @@ Return your response as JSON with the following format:
     "reasoning": "brief explanation"
 }}
 
-Use the exact enum values (e.g., "deal_summary", "offered_certificates", "payment_priority").
-The hierarchy is maintained by the document structure, so assign the most specific category that matches.
+Use the exact enum values from the ALLOWED CATEGORIES list above.
 """
         return prompt
 
@@ -368,7 +395,7 @@ The hierarchy is maintained by the document structure, so assign the most specif
 
     def _collect_stats_recursive(self, sections: List[Dict], stats: Dict, confidences: List[float]) -> None:
         """
-        Recursively collect statistics from sections.
+        Collect statistics from sections (2-level structure only).
 
         Args:
             sections: List of section dicts
@@ -396,9 +423,27 @@ The hierarchy is maintained by the document structure, so assign the most specif
             else:
                 stats['unclassified_count'] += 1
 
-            # Recurse into subsections
+            # Process level 2 subsections (only one level deep)
             if 'sections' in section and section['sections']:
-                self._collect_stats_recursive(section['sections'], stats, confidences)
+                for subsection in section['sections']:
+                    stats['total_sections'] += 1
+                    sub_category = subsection.get('category')
+                    sub_confidence = subsection.get('confidence', 0.0)
+
+                    if sub_category:
+                        stats['classified_count'] += 1
+                        stats['by_category'][sub_category] = stats['by_category'].get(sub_category, 0) + 1
+                        confidences.append(sub_confidence)
+
+                        # Determine classification method by confidence
+                        if sub_confidence >= 0.95:
+                            stats['by_method']['exact'] += 1
+                        elif sub_confidence >= 0.75:
+                            stats['by_method']['fuzzy'] += 1
+                        else:
+                            stats['by_method']['llm'] += 1
+                    else:
+                        stats['unclassified_count'] += 1
 
     def export_section_map(
         self,

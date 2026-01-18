@@ -54,15 +54,26 @@ b) Verify prospectus is parsed:
      * Do NOT attempt to answer the question yet
    - If status is 'failed': Inform user parsing failed and they should try re-uploading
 
-c) Retrieve relevant information:
-   - Use analyze_query_sections to identify which sections are relevant
-   - Use retrieve_sections to get the actual content
-   - Answer the question based on retrieved context
+c) Retrieve relevant information (RAG workflow):
+   Step 1: Use analyze_query_sections to identify which sections are most relevant (returns up to 3 sections)
+   Step 2: Use retrieve_sections to get the actual content from those sections
+   Step 3: AFTER retrieve_sections completes, you will see a ToolMessage with the retrieved content
+   Step 4: READ the ToolMessage content carefully - it contains the COMPLETE section text
+   Step 5: Formulate your answer based ONLY on the retrieved content
+   Step 6: Provide the answer to the user WITHOUT calling any more tools
+
+   CRITICAL WORKFLOW:
+   - After calling retrieve_sections, you will automatically loop back
+   - You will see the tool results in your message history
+   - DO NOT call more tools - just read the ToolMessage and answer the user
+   - The retrieved content is COMPLETE - use it to provide a detailed, accurate answer
 
 d) Provide response:
-   - Always cite your sources (section names, page numbers)
+   - Base your answer ONLY on the retrieved section content
+   - Always cite your sources (section names, page numbers from the retrieved content)
    - Be specific and accurate
-   - If information is not available, say so clearly
+   - If information is not available in the retrieved sections, say so clearly
+   - Quote relevant parts of the prospectus when appropriate
 
 IMPORTANT RULES:
 - ALWAYS use tools to retrieve deal-specific information - NEVER make up details about specific deals
@@ -107,53 +118,55 @@ Return only the classification: "general_cmo" or "deal_specific"
 """
 
 SECTION_ANALYSIS_PROMPT = """
-Given the user's query about a CMO prospectus, identify which sections of the prospectus
-are most relevant to answer the question.
+Given the user's query about a CMO prospectus, identify the 3 MOST relevant sections to answer the question.
 
-Available section categories and subcategories:
+AVAILABLE CATEGORIES IN THIS PROSPECTUS (organized by hierarchy):
+{available_categories}
 
-CATEGORIES:
-- deal_summary: Overall deal information and structure
-- risk_factors: Risk descriptions
-- certificate_structure: Certificate/tranche characteristics
-- collateral_description: Underlying collateral information
-
-SUBCATEGORIES (under deal_summary):
-- offered_certificates: List and summary of tranches
-- counterparties: Deal parties (servicer, trustee, etc.)
-- key_dates: Important dates (settlement, first payment, etc.)
-- payment_priority: Payment waterfall/priority
-- interest_distribution: How interest is distributed
-- principal_distribution: How principal is distributed
-- cross_collateralization: Cross-collateralization structure
-- clean_up_call: Clean-up call provisions
-- credit_enhancement: Credit enhancement mechanisms
-- mortgage_summary: Summary of mortgage pool
-- tax_information: Tax treatment
-- certificate_ratings: Credit ratings
-
-SUBCATEGORIES (under risk_factors):
-- prepayment_risk: Prepayment-related risks
-- interest_rate_risk: Interest rate risks
-- credit_enhancement_risk: Credit enhancement risks
-
-SUBCATEGORIES (under certificate_structure):
-- certificate_characteristics: Tranche characteristics
-- loss_allocation: How losses are allocated
-- subordinate_certificates_payments: Subordination structure
-
-SUBCATEGORIES (under collateral_description):
-- loan_characteristics: Loan-level characteristics
-- loan_statistics: Statistical information about loans
-- loan_assignment: Loan assignment details
+HIERARCHY STRUCTURE EXPLANATION:
+- Lines starting with a category name followed by a colon are TOP-LEVEL parent categories
+- The comma-separated list after the colon contains SUBCATEGORIES under that parent
+- Example: "deal_summary: offered_certificates, payment_priority" means:
+  * "deal_summary" is a level 1 parent category
+  * "offered_certificates" and "payment_priority" are level 2 subcategories under deal_summary
 
 User Query: {query}
 
-Return a JSON with relevant categories and subcategories:
+IMPORTANT SELECTION RULES:
+1. Return AT MOST 3 sections (ranked by relevance)
+2. Only select categories listed in AVAILABLE CATEGORIES above
+3. Be specific: Choose subcategories when possible rather than broad top-level categories
+4. NEVER return both a parent category AND its subcategories together
+   - If you select a top-level category (e.g., "deal_summary"), do NOT also select its subcategories
+   - If you need specific information, select only the relevant subcategories, not the parent
+
+Return a JSON with the 3 most relevant categories AND their parent information:
 {{
-    "categories": ["category1", "category2"],
-    "subcategories": ["subcategory1", "subcategory2"]
+    "sections": [
+        {{
+            "category": "category_name",
+            "parent": "parent_category_name or null if top-level"
+        }},
+        ...
+    ],
+    "reasoning": "Brief explanation of why these specific categories are most relevant"
 }}
 
-If unsure, include multiple relevant sections. It's better to retrieve too much than too little.
+Guidelines:
+- Limit to maximum 3 sections
+- For top-level categories, set "parent": null
+- For subcategories, include the parent category name
+- Be precise: prefer specific subcategories over broad top-level categories
+- Only use categories that actually exist in the AVAILABLE CATEGORIES list
+- Use exact category names (e.g., "payment_priority", not "Payment Priority")
+
+Example response:
+{{
+    "sections": [
+        {{"category": "payment_priority", "parent": "deal_summary"}},
+        {{"category": "offered_certificates", "parent": "deal_summary"}},
+        {{"category": "prepayment_risk", "parent": "risk_factors"}}
+    ],
+    "reasoning": "User is asking about payment structure and tranches, need payment priority, certificate details, and prepayment considerations"
+}}
 """

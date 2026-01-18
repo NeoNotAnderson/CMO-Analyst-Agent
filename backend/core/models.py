@@ -168,8 +168,8 @@ class SectionMap(models.Model):
         """Standardized section categories."""
         DEAL_SUMMARY = 'deal_summary', 'Deal Summary'
         RISK_DESCRIPTION = 'risk_factors', 'Risk Factors'
-        CERTIFICATE_DESCRIPTION = 'certificate_structure', 'Certificate Structure'
-        COLLATERAL_DESCRIPTION = 'collateral_description', 'Collateral Description'
+        CERTIFICATE_DESCRIPTION = 'DESCRIPTION OF THE CERTIFICATES', 'CERTIFICATEES', 'certificate description'
+        COLLATERAL_DESCRIPTION = 'collateral_description', 'Collateral Description', 'DESCRIPTION OF THE MORTGAGE POOLS'
         UNCLASSIFIED = 'unclassified', 'Unclassified'
 
     class Subcategory(models.TextChoices):

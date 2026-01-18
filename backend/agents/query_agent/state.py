@@ -16,6 +16,8 @@ class QueryState(MessagesState):
 
     Attributes:
         messages: List of messages (inherited from MessagesState) - agent reasoning/tool calls
+                 Note: Retrieved section content is passed through messages (ToolMessage),
+                 implementing a RAG pattern where the agent sees retrieved content in context
         session_id: Session identifier for tracking user sessions
         active_prospectus_id: UUID of the currently active prospectus for this session
         query_type: Type of query (general_cmo, deal_specific)

@@ -22,7 +22,7 @@ class SectionCategory(str, Enum):
     # Top-level categories
     DEAL_SUMMARY = "deal_summary"
     RISK_DESCRIPTION = "risk_factors"
-    CERTIFICATE_DESCRIPTION = "certificate_structure"
+    CERTIFICATE_DESCRIPTION = "certificate_description"
     COLLATERAL_DESCRIPTION = "collateral_description"
 
     # Common sections under DEAL_SUMMARY
@@ -256,3 +256,70 @@ def get_mapping_by_title(title: str) -> Optional[SectionMapping]:
                 best_similarity = similarity
 
     return best_match
+
+
+# Hierarchical category mapping
+TOP_LEVEL_CATEGORIES = {
+    SectionCategory.DEAL_SUMMARY,
+    SectionCategory.RISK_DESCRIPTION,
+    SectionCategory.CERTIFICATE_DESCRIPTION,
+    SectionCategory.COLLATERAL_DESCRIPTION,
+}
+
+CATEGORY_HIERARCHY = {
+    SectionCategory.DEAL_SUMMARY: {
+        SectionCategory.OFFERED_CERTIFICATES,
+        SectionCategory.COUNTERPARTIES,
+        SectionCategory.KEY_DATES,
+        SectionCategory.PAYMENT_PRIORITY,
+        SectionCategory.INTEREST_DISTRIBUTION,
+        SectionCategory.PRINCIPAL_DISTRIBUTION,
+        SectionCategory.CROSS_COLLATERALIZATION,
+        SectionCategory.CLEAN_UP_CALL,
+        SectionCategory.CREDIT_ENHANCEMENT,
+        SectionCategory.MORTGAGE_SUMMARY,
+        SectionCategory.TAX_INFORMATION,
+        SectionCategory.CERTIFICATE_RATINGS,
+    },
+    SectionCategory.RISK_DESCRIPTION: {
+        SectionCategory.PREPAYMENT_RISK,
+        SectionCategory.INTEREST_RATE_RISK,
+        SectionCategory.CREDIT_ENHANCEMENT_RISK,
+    },
+    SectionCategory.CERTIFICATE_DESCRIPTION: {
+        SectionCategory.CERTIFICATE_CHARACTERISTICS,
+        SectionCategory.LOSS_ALLOCATION,
+        SectionCategory.SUBORDINATE_CERTIFICATES_PAYMENTS,
+    },
+    SectionCategory.COLLATERAL_DESCRIPTION: {
+        SectionCategory.MORTGAGE_CHARACTERISTICS,
+        SectionCategory.MORTGAGE_STATISTICS,
+        SectionCategory.MORTGAGE_ASSIGNMENT,
+    },
+}
+
+
+def get_allowed_categories(level: int, parent_category: Optional[SectionCategory] = None) -> set:
+    """
+    Get allowed categories based on hierarchy level and parent category.
+
+    Args:
+        level: Section level (1 = top-level, 2 = subsections)
+        parent_category: Parent section's category (required for level > 1)
+
+    Returns:
+        Set of allowed SectionCategory values
+    """
+    if level == 1:
+        # Level 1 sections can only be top-level categories
+        return TOP_LEVEL_CATEGORIES
+    else:
+        # Level 2+ sections must be subcategories under their parent
+        if parent_category and parent_category in CATEGORY_HIERARCHY:
+            return CATEGORY_HIERARCHY[parent_category]
+        else:
+            # If parent category unknown, allow all subcategories
+            all_subcategories = set()
+            for subcats in CATEGORY_HIERARCHY.values():
+                all_subcategories.update(subcats)
+            return all_subcategories
