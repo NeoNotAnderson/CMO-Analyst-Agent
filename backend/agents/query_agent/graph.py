@@ -125,43 +125,51 @@ def run_agent(session_id: str, user_query: str, user_id: str = None, config=None
     if thread_id:
         config["configurable"] = {"thread_id": thread_id}
 
-    # Get checkpointer and create agent
+    # Get checkpointer and create agent (still used for tool call continuity)
     checkpointer = get_or_create_checkpointer() if thread_id else None
     agent = create_query_graph(checkpointer=checkpointer)
 
-    # For first message in thread, initialize with system message
-    # For subsequent messages, just add user message (history is loaded from checkpoint)
-    if thread_id and checkpointer:
-        # Check if this is first message by trying to get checkpoint
-        try:
-            checkpoint = checkpointer.get(config["configurable"])
-            is_first_message = checkpoint is None
-        except:
-            is_first_message = True
-    else:
-        is_first_message = True
+    # Use semantic search to get relevant conversation history
+    from .conversation_memory import search_relevant_conversation_history, format_conversation_context
 
-    if is_first_message:
-        # First message: include system message
-        system_message = SystemMessage(content=QUERY_AGENT_SYSTEM_PROMPT)
-        state = {
-            'session_id': session_id,
-            'active_prospectus_id': active_prospectus_id,
-            'query_type': None,
-            'prospectus_name': prospectus_name,
-            'messages': [system_message, user_message],
-            'errors': []
-        }
-    else:
-        # Subsequent message: only user message (agent loads history from checkpoint)
-        state = {
-            'session_id': session_id,
-            'active_prospectus_id': active_prospectus_id,
-            'query_type': None,
-            'prospectus_name': prospectus_name,
-            'messages': [user_message],
-            'errors': []
-        }
+    relevant_history = []
+    conversation_context = ""
+
+    if thread_id:
+        # Search for semantically relevant past messages
+        relevant_history = search_relevant_conversation_history(
+            thread_id=thread_id,
+            current_query=user_query,
+            top_k=3,  # Retrieve top 3 semantically similar exchanges
+            recent_k=4  # Always include 4 most recent messages
+        )
+
+        # Format as context string for system message
+        conversation_context = format_conversation_context(relevant_history)
+
+        print(f"[CONVERSATION_MEMORY] Retrieved {len(relevant_history)} relevant messages")
+        if relevant_history:
+            print(f"[CONVERSATION_MEMORY] Similarity scores: {[f'{m['similarity_score']:.2f}' for m in relevant_history[:5]]}")
+
+    # Build system message with conversation context
+    system_content = QUERY_AGENT_SYSTEM_PROMPT
+    if conversation_context:
+        system_content = f"{QUERY_AGENT_SYSTEM_PROMPT}\n\n{conversation_context}"
+
+    system_message = SystemMessage(content=system_content)
+
+    # Always build fresh state with:
+    # 1. System message (with embedded conversation context)
+    # 2. Current user message
+    # LangGraph checkpointing still handles tool call continuity within a single turn
+    state = {
+        'session_id': session_id,
+        'active_prospectus_id': active_prospectus_id,
+        'query_type': None,
+        'prospectus_name': prospectus_name,
+        'messages': [system_message, user_message],
+        'errors': []
+    }
 
     print(f"\n{'='*60}")
     print(f"[QUERY AGENT] Starting query")
@@ -170,7 +178,7 @@ def run_agent(session_id: str, user_query: str, user_id: str = None, config=None
     print(f"Query: {user_query}")
     print(f"Active Prospectus ID: {active_prospectus_id}")
     print(f"Prospectus Name: {prospectus_name}")
-    print(f"First Message: {is_first_message}")
+    print(f"Relevant History Messages: {len(relevant_history)}")
     print(f"{'='*60}\n")
 
     result = agent.invoke(state, config=config)

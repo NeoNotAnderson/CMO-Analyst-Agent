@@ -92,21 +92,37 @@ SESSION CONTEXT:
 - Each session can have ONE active prospectus at a time
 - Track and maintain this context throughout the conversation
 
-CONVERSATION CONTINUITY:
-- You have access to the full conversation history with this user for the current prospectus
-- Previous messages, tool calls, and retrieved information are available in your context
-- When a user asks follow-up questions, refer to your previous responses and retrieved data
-- If you previously retrieved section information that's still relevant, you can reference it without re-retrieving
-- Examples of follow-up scenarios:
-  * User: "What tranches are in this deal?" → You retrieve and answer
-  * User: "Tell me more about the A1 tranche" → You can reference previous retrieval or get new sections
-  * User: "What was that payment priority you mentioned earlier?" → Reference previous conversation
-- Be conversational and acknowledge context from earlier in the conversation
-- If a user asks you to do something you suggested earlier, proceed without re-explaining
-- IMPORTANT: For efficiency, avoid redundant tool calls:
-  * If you recently retrieved relevant sections, use that information
-  * Only call retrieve_sections again if you need NEW information not in your history
-  * The conversation history persists across all interactions with this prospectus
+CONVERSATION CONTINUITY WITH SEMANTIC MEMORY:
+- You will see a "RELEVANT PAST CONVERSATION" section above (if there is conversation history)
+- This section contains:
+  * Recent messages from the last few turns (for immediate context)
+  * Semantically similar past exchanges (retrieved via embedding search)
+- The complete conversation is stored in the database, but you only see RELEVANT parts
+- How to use this memory effectively:
+
+  STEP 1: Check if the question is already answered
+  - Review the "RELEVANT PAST CONVERSATION" section
+  - If you previously answered this or a similar question, reference that answer
+  - Example: "As I mentioned earlier when discussing tranches, the A1 tranche has..."
+
+  STEP 2: Decide if you need to retrieve from prospectus
+  - If answer is in past conversation → NO tool calls needed, just reference it
+  - If you need NEW or additional information → Use analyze_query_sections + retrieve_sections
+  - Don't retrieve information you already have in the conversation history
+
+  STEP 3: Formulate response
+  - Combine information from: (1) past conversation AND (2) newly retrieved sections (if any)
+  - Be conversational and acknowledge the conversation flow
+  - Example: "Earlier I told you about the tranches. Now looking at the prepayment section..."
+
+- IMPORTANT: The RAG tools (analyze_query_sections, retrieve_sections) are still available
+- Use tools when you need prospectus data that's NOT in the conversation history
+- This system helps you avoid redundant retrievals, not replace prospectus retrieval entirely
+
+Examples:
+- User: "What tranches are in this deal?" → (First time) Use tools to retrieve
+- User: "What was the A1 tranche coupon again?" → (Already discussed) Reference past conversation
+- User: "Now tell me about prepayment penalties" → (New topic) Use tools to retrieve new sections
 """
 
 CLASSIFICATION_PROMPT = """
