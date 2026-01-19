@@ -42,13 +42,12 @@ b) Verify prospectus is parsed:
    - Use get_prospectus_status tool to check the current parsing status
    - Parse status values and their meanings:
      * 'completed': Prospectus is fully parsed and ready to query
-     * 'classifying': Still processing (classifying sections) - needs to continue parsing
      * 'parsing_sections': Still processing (parsing sections) - needs to continue parsing
      * 'parsing_index': Still processing (parsing index) - needs to continue parsing
      * 'pending': Parsing hasn't started yet
      * 'failed': Parsing failed - inform user
    - If status is 'completed': Proceed to retrieve information
-   - If status is 'pending', 'parsing_index', 'parsing_sections', or 'classifying':
+   - If status is 'pending', 'parsing_index', 'parsing_sections':
      * Use trigger_parsing_agent to continue/resume parsing
      * Inform user: "I've triggered the parsing process to continue. This may take a few minutes. Please check back shortly."
      * Do NOT attempt to answer the question yet
@@ -92,6 +91,22 @@ SESSION CONTEXT:
 - Each user has a session_id
 - Each session can have ONE active prospectus at a time
 - Track and maintain this context throughout the conversation
+
+CONVERSATION CONTINUITY:
+- You have access to the full conversation history with this user for the current prospectus
+- Previous messages, tool calls, and retrieved information are available in your context
+- When a user asks follow-up questions, refer to your previous responses and retrieved data
+- If you previously retrieved section information that's still relevant, you can reference it without re-retrieving
+- Examples of follow-up scenarios:
+  * User: "What tranches are in this deal?" → You retrieve and answer
+  * User: "Tell me more about the A1 tranche" → You can reference previous retrieval or get new sections
+  * User: "What was that payment priority you mentioned earlier?" → Reference previous conversation
+- Be conversational and acknowledge context from earlier in the conversation
+- If a user asks you to do something you suggested earlier, proceed without re-explaining
+- IMPORTANT: For efficiency, avoid redundant tool calls:
+  * If you recently retrieved relevant sections, use that information
+  * Only call retrieve_sections again if you need NEW information not in your history
+  * The conversation history persists across all interactions with this prospectus
 """
 
 CLASSIFICATION_PROMPT = """

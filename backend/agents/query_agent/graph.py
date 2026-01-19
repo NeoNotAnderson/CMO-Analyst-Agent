@@ -13,9 +13,9 @@ from .prompts import QUERY_AGENT_SYSTEM_PROMPT
 import uuid
 
 
-def create_query_graph():
+def create_query_graph(checkpointer=None):
     """
-    Create the ReAct query agent graph.
+    Create the ReAct query agent graph with optional checkpointing.
 
     Workflow (ReAct Loop):
     1. agent_node -> Agent reasons about the query and decides to call tools or respond
@@ -29,8 +29,12 @@ def create_query_graph():
     - agent_node -> [should_continue] -> tools OR END
     - tools -> agent_node (loop back)
 
+    Args:
+        checkpointer: Optional PostgresSaver for state persistence.
+                     If provided, enables conversation memory across invocations.
+
     Returns:
-        Compiled LangGraph
+        Compiled LangGraph with checkpointing enabled (if checkpointer provided)
     """
     # Initialize the graph
     workflow = StateGraph(QueryState)
@@ -49,19 +53,22 @@ def create_query_graph():
     )
     workflow.add_edge('tools', 'agent')
 
-    app = workflow.compile()
+    # Compile with checkpointer for persistence
+    app = workflow.compile(checkpointer=checkpointer)
     return app
 
 
-def run_agent(session_id: str, user_query: str, config=None):
+def run_agent(session_id: str, user_query: str, user_id: str = None, config=None):
     """
-    Run the query agent on a user's question.
+    Run the query agent on a user's question with conversation persistence.
 
     This is the main entry point for processing user queries through the agent.
+    Uses LangGraph checkpointing to maintain conversation history across turns.
 
     Args:
         session_id: User session identifier (required for tracking active prospectus)
         user_query: The user's question
+        user_id: User ID for thread management (required for persistence)
         config: Optional config dict for callbacks, etc.
                 Example: {"callbacks": [callback_handler]}
 
@@ -71,42 +78,99 @@ def run_agent(session_id: str, user_query: str, config=None):
     Example usage:
         result = run_agent(
             session_id="user123",
-            user_query="What is a Z-tranche?"
+            user_query="What is a Z-tranche?",
+            user_id="1"
         )
         response = result['messages'][-1].content
         print(response)
     """
-    # Create system message with context
-    system_message = SystemMessage(content=QUERY_AGENT_SYSTEM_PROMPT)
-
-    # Create user message
-    user_message = HumanMessage(content=user_query)
-
     # Get session info to populate state
     from api.views import _SESSION_STORE
+    from .checkpoint import get_or_create_checkpointer
+    from core.models import ConversationThread, Prospectus
+    from django.contrib.auth.models import User
+
     session_data = _SESSION_STORE.get(session_id, {})
     active_prospectus_id = session_data.get('active_prospectus_id')
     prospectus_name = session_data.get('active_prospectus_name')
 
-    # Initialize state with session data
-    state = {
-        'session_id': session_id,
-        'active_prospectus_id': active_prospectus_id,
-        'query_type': None,
-        'prospectus_name': prospectus_name,
-        'messages': [system_message, user_message],
-        'errors': []
-    }
+    # Get or create conversation thread
+    thread_id = None
+    if user_id and active_prospectus_id:
+        try:
+            user_obj = User.objects.get(id=user_id)
+            prospectus_obj = Prospectus.objects.get(prospectus_id=active_prospectus_id)
 
-    # Create and invoke agent
-    agent = create_query_graph()
+            # Get or create thread
+            thread, created = ConversationThread.objects.get_or_create(
+                user=user_obj,
+                prospectus=prospectus_obj
+            )
+            thread_id = str(thread.thread_id)
+
+            if created:
+                print(f"[QUERY AGENT] Created new conversation thread: {thread_id}")
+            else:
+                print(f"[QUERY AGENT] Using existing conversation thread: {thread_id}")
+        except Exception as e:
+            print(f"[QUERY AGENT] Warning: Could not create thread: {e}")
+
+    # Create user message
+    user_message = HumanMessage(content=user_query)
+
+    # Build config with thread_id for checkpointing
+    if config is None:
+        config = {}
+
+    if thread_id:
+        config["configurable"] = {"thread_id": thread_id}
+
+    # Get checkpointer and create agent
+    checkpointer = get_or_create_checkpointer() if thread_id else None
+    agent = create_query_graph(checkpointer=checkpointer)
+
+    # For first message in thread, initialize with system message
+    # For subsequent messages, just add user message (history is loaded from checkpoint)
+    if thread_id and checkpointer:
+        # Check if this is first message by trying to get checkpoint
+        try:
+            checkpoint = checkpointer.get(config["configurable"])
+            is_first_message = checkpoint is None
+        except:
+            is_first_message = True
+    else:
+        is_first_message = True
+
+    if is_first_message:
+        # First message: include system message
+        system_message = SystemMessage(content=QUERY_AGENT_SYSTEM_PROMPT)
+        state = {
+            'session_id': session_id,
+            'active_prospectus_id': active_prospectus_id,
+            'query_type': None,
+            'prospectus_name': prospectus_name,
+            'messages': [system_message, user_message],
+            'errors': []
+        }
+    else:
+        # Subsequent message: only user message (agent loads history from checkpoint)
+        state = {
+            'session_id': session_id,
+            'active_prospectus_id': active_prospectus_id,
+            'query_type': None,
+            'prospectus_name': prospectus_name,
+            'messages': [user_message],
+            'errors': []
+        }
 
     print(f"\n{'='*60}")
-    print(f"[QUERY AGENT] Starting new query")
+    print(f"[QUERY AGENT] Starting query")
     print(f"Session ID: {session_id}")
+    print(f"Thread ID: {thread_id}")
     print(f"Query: {user_query}")
     print(f"Active Prospectus ID: {active_prospectus_id}")
     print(f"Prospectus Name: {prospectus_name}")
+    print(f"First Message: {is_first_message}")
     print(f"{'='*60}\n")
 
     result = agent.invoke(state, config=config)
