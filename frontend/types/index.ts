@@ -21,8 +21,6 @@ export type ParseStatus =
   | 'pending'
   | 'parsing_index'
   | 'parsing_sections'
-  | 'classifying'
-  | 'storing'
   | 'completed'
   | 'failed';
 
@@ -51,4 +49,10 @@ export interface ApiError {
   error: string;
   detail?: string;
   status?: number;
+}
+
+export interface SessionResponse {
+  session_id: string;
+  message: string;
+  prospectuses: Prospectus[];
 }
