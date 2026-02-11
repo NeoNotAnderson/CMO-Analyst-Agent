@@ -22,6 +22,4 @@ class ParsingState(MessagesState):
     """
 
     prospectus: Prospectus
-    #after implementig the classify logic, we can add this one:
-    #section_map: Dict[str, List[Dict]]
     errors: List[str]
