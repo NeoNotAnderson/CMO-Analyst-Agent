@@ -426,10 +426,11 @@ def set_active_prospectus_view(request):
 @permission_classes([IsAuthenticated])
 def send_chat_message(request):
     """
-    Send chat message and get agent response.
+    Send chat message and get agent response with conversation persistence.
 
     The backend uses the session to determine which prospectus is active.
     User must have selected a prospectus via the sidebar first.
+    Messages are stored in database for conversation history.
 
     Expected Request:
     {
@@ -445,6 +446,7 @@ def send_chat_message(request):
     }
     """
     from agents.query_agent import run_agent, extract_response
+    from core.models import ConversationThread, ChatMessage
 
     message = request.data.get('message')
     if not message:
@@ -455,11 +457,49 @@ def send_chat_message(request):
 
     # Use user ID to get session
     session_id = f"user_{request.user.id}"
+    user_id = str(request.user.id)
 
-    # Run query agent (agent will use session to get active prospectus)
+    # Get active prospectus from session
+    session_data = _SESSION_STORE.get(session_id, {})
+    active_prospectus_id = session_data.get('active_prospectus_id')
+
+    # Store user message in database
+    if active_prospectus_id:
+        try:
+            prospectus = Prospectus.objects.get(prospectus_id=active_prospectus_id)
+            thread, _ = ConversationThread.objects.get_or_create(
+                user=request.user,
+                prospectus=prospectus
+            )
+
+            # Save user message
+            ChatMessage.objects.create(
+                thread=thread,
+                role='user',
+                content=message
+            )
+        except Exception as e:
+            print(f"[WARNING] Could not save user message: {e}")
+
+    # Run query agent with user_id for checkpointing
     try:
-        result = run_agent(session_id=session_id, user_query=message)
+        result = run_agent(
+            session_id=session_id,
+            user_query=message,
+            user_id=user_id
+        )
         response_content = extract_response(result)
+
+        # Store assistant message in database
+        if active_prospectus_id:
+            try:
+                ChatMessage.objects.create(
+                    thread=thread,
+                    role='assistant',
+                    content=response_content
+                )
+            except Exception as e:
+                print(f"[WARNING] Could not save assistant message: {e}")
 
         response_message = {
             'id': str(uuid.uuid4()),
@@ -481,13 +521,13 @@ def send_chat_message(request):
 @permission_classes([IsAuthenticated])
 def get_chat_history(request, prospectus_id):
     """
-    Get chat history for a prospectus
+    Get chat history for a prospectus from database.
 
     Steps:
     1. Validate prospectus exists and user has access
-    2. Query chat messages for this prospectus (future: from database)
-    3. For now, return empty array
-    4. Return serialized messages
+    2. Query ConversationThread for this user-prospectus pair
+    3. Query ChatMessages for the thread
+    4. Return serialized messages (excluding system messages)
 
     Expected Response:
     {
@@ -507,28 +547,104 @@ def get_chat_history(request, prospectus_id):
             }
         ]
     }
-
-    Mock Implementation (for now):
-    return Response({
-        'prospectus_id': prospectus_id,
-        'messages': []  # Empty for now, will store in DB later
-    })
     """
+    from core.models import ConversationThread, ChatMessage
+
     try:
-        file = Prospectus.objects.get(prospectus_id=prospectus_id)
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
     except Prospectus.DoesNotExist:
         return Response(
             {'error': 'Prospectus not found'},
             status=status.HTTP_404_NOT_FOUND
         )
 
-    if request.user != file.created_by:
+    if request.user != prospectus.created_by:
         return Response(
             {'error': 'current user does not have access to this file'},
             status=status.HTTP_403_FORBIDDEN
         )
-    #Mock Implementation (for now):
-    return Response({
-        'prospectus_id': prospectus_id,
-        'messages': []  # Empty for now, will store in DB later
-    })
+
+    # Get conversation thread for this user-prospectus pair
+    try:
+        thread = ConversationThread.objects.get(
+            user=request.user,
+            prospectus=prospectus
+        )
+
+        # Get all messages for this thread (exclude system and tool messages)
+        messages = ChatMessage.objects.filter(
+            thread=thread,
+            role__in=['user', 'assistant']
+        ).order_by('created_at')
+
+        # Format messages for response
+        formatted_messages = [
+            {
+                'id': str(msg.message_id),
+                'role': msg.role,
+                'content': msg.content,
+                'timestamp': msg.created_at.isoformat()
+            }
+            for msg in messages
+        ]
+
+        return Response({
+            'prospectus_id': prospectus_id,
+            'messages': formatted_messages
+        }, status=status.HTTP_200_OK)
+
+    except ConversationThread.DoesNotExist:
+        # No conversation yet for this prospectus
+        return Response({
+            'prospectus_id': prospectus_id,
+            'messages': []
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def clear_chat_history(request, prospectus_id):
+    """
+    Clear chat history for a prospectus.
+
+    This deletes the conversation thread and all associated messages
+    and checkpoints for the user-prospectus pair.
+
+    Expected Response:
+    {
+        "message": "Chat history cleared successfully"
+    }
+    """
+    from core.models import ConversationThread
+
+    try:
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+    except Prospectus.DoesNotExist:
+        return Response(
+            {'error': 'Prospectus not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.user != prospectus.created_by:
+        return Response(
+            {'error': 'current user does not have access to this file'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Delete conversation thread (cascade will delete messages and checkpoints)
+    try:
+        thread = ConversationThread.objects.get(
+            user=request.user,
+            prospectus=prospectus
+        )
+        thread.delete()
+
+        return Response({
+            'message': 'Chat history cleared successfully'
+        }, status=status.HTTP_200_OK)
+
+    except ConversationThread.DoesNotExist:
+        # No conversation to clear
+        return Response({
+            'message': 'No chat history found for this prospectus'
+        }, status=status.HTTP_200_OK)

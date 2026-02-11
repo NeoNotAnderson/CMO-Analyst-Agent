@@ -12,9 +12,10 @@ import { logout } from '@/lib/api';
 interface HeaderProps {
   showLogout?: boolean;
   username?: string;
+  onUploadClick?: () => void;
 }
 
-export default function Header({ showLogout, username }: HeaderProps) {
+export default function Header({ showLogout, username, onUploadClick }: HeaderProps) {
   const router = useRouter();
   const handleLogout = async () => {
     try {
@@ -41,6 +42,14 @@ export default function Header({ showLogout, username }: HeaderProps) {
               <span className="text-sm text-gray-600">
                 Logged in as: <span className="font-semibold">{username}</span>
               </span>
+            )}
+            {onUploadClick && (
+              <button
+                onClick={onUploadClick}
+                className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                Upload Prospectus
+              </button>
             )}
             <button
               onClick={handleLogout}

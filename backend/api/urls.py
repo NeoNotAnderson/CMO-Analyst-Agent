@@ -25,4 +25,5 @@ urlpatterns = [
     # Chat endpoints
     path('chat/message/', views.send_chat_message, name='chat_message'),
     path('chat/history/<uuid:prospectus_id>/', views.get_chat_history, name='chat_history'),
+    path('chat/history/<uuid:prospectus_id>/clear/', views.clear_chat_history, name='clear_chat_history'),
 ]

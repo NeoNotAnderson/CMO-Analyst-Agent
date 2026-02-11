@@ -42,13 +42,12 @@ b) Verify prospectus is parsed:
    - Use get_prospectus_status tool to check the current parsing status
    - Parse status values and their meanings:
      * 'completed': Prospectus is fully parsed and ready to query
-     * 'classifying': Still processing (classifying sections) - needs to continue parsing
      * 'parsing_sections': Still processing (parsing sections) - needs to continue parsing
      * 'parsing_index': Still processing (parsing index) - needs to continue parsing
      * 'pending': Parsing hasn't started yet
      * 'failed': Parsing failed - inform user
    - If status is 'completed': Proceed to retrieve information
-   - If status is 'pending', 'parsing_index', 'parsing_sections', or 'classifying':
+   - If status is 'pending', 'parsing_index', 'parsing_sections':
      * Use trigger_parsing_agent to continue/resume parsing
      * Inform user: "I've triggered the parsing process to continue. This may take a few minutes. Please check back shortly."
      * Do NOT attempt to answer the question yet
@@ -92,6 +91,38 @@ SESSION CONTEXT:
 - Each user has a session_id
 - Each session can have ONE active prospectus at a time
 - Track and maintain this context throughout the conversation
+
+CONVERSATION CONTINUITY WITH SEMANTIC MEMORY:
+- You will see a "RELEVANT PAST CONVERSATION" section above (if there is conversation history)
+- This section contains:
+  * Recent messages from the last few turns (for immediate context)
+  * Semantically similar past exchanges (retrieved via embedding search)
+- The complete conversation is stored in the database, but you only see RELEVANT parts
+- How to use this memory effectively:
+
+  STEP 1: Check if the question is already answered
+  - Review the "RELEVANT PAST CONVERSATION" section
+  - If you previously answered this or a similar question, reference that answer
+  - Example: "As I mentioned earlier when discussing tranches, the A1 tranche has..."
+
+  STEP 2: Decide if you need to retrieve from prospectus
+  - If answer is in past conversation → NO tool calls needed, just reference it
+  - If you need NEW or additional information → Use analyze_query_sections + retrieve_sections
+  - Don't retrieve information you already have in the conversation history
+
+  STEP 3: Formulate response
+  - Combine information from: (1) past conversation AND (2) newly retrieved sections (if any)
+  - Be conversational and acknowledge the conversation flow
+  - Example: "Earlier I told you about the tranches. Now looking at the prepayment section..."
+
+- IMPORTANT: The RAG tools (analyze_query_sections, retrieve_sections) are still available
+- Use tools when you need prospectus data that's NOT in the conversation history
+- This system helps you avoid redundant retrievals, not replace prospectus retrieval entirely
+
+Examples:
+- User: "What tranches are in this deal?" → (First time) Use tools to retrieve
+- User: "What was the A1 tranche coupon again?" → (Already discussed) Reference past conversation
+- User: "Now tell me about prepayment penalties" → (New topic) Use tools to retrieve new sections
 """
 
 CLASSIFICATION_PROMPT = """

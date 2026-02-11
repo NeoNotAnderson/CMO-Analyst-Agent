@@ -33,7 +33,7 @@ def check_parse_status(prospectus_id: str) -> str:
 
     Returns:
         str: Parse status (one of: 'pending', 'parsing_index', 'parsing_sections',
-             'classifying', 'completed', 'failed')
+             'completed', 'failed')
     """
     try:
         prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
@@ -1163,82 +1163,3 @@ def store_parsed_pages_in_db(prospectus: Prospectus, page_numbers: List[int], pa
     except Exception as e:
         print(f"Error storing parsed pages in database: {e}")
         return False
-
-def classify_and_build_section_map(prospectus_id: str) -> str:
-    """
-    [DEPRECATED!!!]
-    in feature/parsing-agent we still use it
-    but in the master, it won't use section category at all
-    but use parsed file directly and during query analysis, 
-    we ask LLM to directly traverse the parsed file and chekck the title and sample text to figure out which sections are the most related.
-
-    Classify all sections from parsed prospectus and enrich parsed_file with categories.
-
-    This tool:
-    1. Loads the prospectus with parsed_file
-    2. Classifies each section using rule-based and LLM methods
-    3. Enriches parsed_file with 'category' and 'confidence' fields
-    4. Saves the enriched parsed_file back to database
-    5. Optionally builds SectionMap entries for fast queries
-
-    Args:
-        prospectus_id: UUID of the prospectus
-
-    Returns:
-        Success message with classification statistics
-    """
-    from .section_classifier import create_section_classifier
-    from core.models import Prospectus
-
-    try:
-        # Get prospectus from database
-        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
-
-        # Check if parsed_file exists
-        if not prospectus.parsed_file or 'sections' not in prospectus.parsed_file:
-            return "Error: parsed_file not found. Please parse the prospectus first."
-
-        # Update status to classifying
-        prospectus.parse_status = 'classifying'
-        prospectus.save()
-        print(f"[STATUS] Updated parse_status to: classifying")
-
-        # Create classifier with LLM client
-        classifier = create_section_classifier(llm_client=llm_client)
-
-        # Run classification (enriches parsed_file in-place)
-        result = classifier.classify_from_prospectus(prospectus)
-
-        if not result.get('success'):
-            error_msg = result.get('error', 'Unknown error')
-            prospectus.parse_status = 'failed'
-            prospectus.save()
-            return f"Classification failed: {error_msg}"
-
-        # Get statistics
-        stats = classifier.get_classification_stats(prospectus.parsed_file)
-
-        # Update status to completed
-        prospectus.parse_status = 'completed'
-        prospectus.save()
-        print(f"[STATUS] Updated parse_status to: completed")
-
-        # Return success message with statistics
-        return (
-            f"Successfully classified {stats['classified_count']} sections "
-            f"({stats['coverage_percentage']:.1f}% coverage). "
-            f"Average confidence: {stats['average_confidence']:.2f}. "
-            f"Unclassified: {stats['unclassified_count']}. "
-            f"Methods used: {stats['by_method']}"
-        )
-
-    except Prospectus.DoesNotExist:
-        return f"Error: Prospectus {prospectus_id} not found."
-    except Exception as e:
-        print(f"[ERROR] Classification failed: {e}")
-        try:
-            prospectus.parse_status = 'failed'
-            prospectus.save()
-        except:
-            pass
-        return f"Classification failed with error: {str(e)}"
