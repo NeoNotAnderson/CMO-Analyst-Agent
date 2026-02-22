@@ -12,6 +12,18 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from .prompts import QUERY_AGENT_SYSTEM_PROMPT
 import uuid
 
+# LangSmith tracing
+try:
+    from langsmith import traceable
+    LANGSMITH_AVAILABLE = True
+except ImportError:
+    # Fallback if langsmith not installed
+    def traceable(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    LANGSMITH_AVAILABLE = False
+
 
 def create_query_graph(checkpointer=None):
     """
@@ -58,6 +70,14 @@ def create_query_graph(checkpointer=None):
     return app
 
 
+@traceable(
+    name="query_agent_execution",
+    tags=["agent", "query"],
+    metadata={
+        "agent_type": "query_agent",
+        "framework": "langgraph"
+    }
+)
 def run_agent(session_id: str, user_query: str, user_id: str = None, config=None):
     """
     Run the query agent on a user's question with conversation persistence.
@@ -124,6 +144,23 @@ def run_agent(session_id: str, user_query: str, user_id: str = None, config=None
 
     if thread_id:
         config["configurable"] = {"thread_id": thread_id}
+
+    # Add LangSmith metadata for tracing
+    config.setdefault("metadata", {}).update({
+        "session_id": session_id,
+        "user_id": user_id,
+        "prospectus_id": active_prospectus_id,
+        "prospectus_name": prospectus_name,
+        "thread_id": thread_id,
+        "query_length": len(user_query),
+    })
+
+    # Add tags for categorization in LangSmith
+    config.setdefault("tags", []).extend([
+        "query_agent",
+        f"prospectus:{prospectus_name}" if prospectus_name else "no_prospectus",
+        "has_thread" if thread_id else "no_thread"
+    ])
 
     # Get checkpointer and create agent (still used for tool call continuity)
     checkpointer = get_or_create_checkpointer() if thread_id else None

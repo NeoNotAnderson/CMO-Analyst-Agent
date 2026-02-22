@@ -13,6 +13,18 @@ import json
 import os
 from dotenv import load_dotenv
 
+# LangSmith tracing
+try:
+    from langsmith import traceable
+    LANGSMITH_AVAILABLE = True
+except ImportError:
+    # Fallback if langsmith not installed
+    def traceable(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    LANGSMITH_AVAILABLE = False
+
 # Load environment variables
 load_dotenv()
 
@@ -54,6 +66,7 @@ class SectionAnalysis(BaseModel):
 # ============================================================================
 
 @tool
+@traceable(name="classify_query", tags=["tool", "classification"])
 def classify_query(user_query: str) -> str:
     """
     Classify user query into question type.
@@ -81,6 +94,7 @@ def classify_query(user_query: str) -> str:
 
 
 @tool
+@traceable(name="get_prospectus_status", tags=["tool", "prospectus"])
 def get_prospectus_status(prospectus_id: str) -> str:
     """
     Get parsing status of a prospectus.
@@ -116,6 +130,7 @@ def get_prospectus_status(prospectus_id: str) -> str:
 
 
 @tool
+@traceable(name="trigger_parsing_agent", tags=["tool", "parsing"])
 def trigger_parsing_agent(prospectus_id: str) -> str:
     """
     Trigger the Parsing Agent to parse a prospectus.
@@ -160,6 +175,7 @@ def trigger_parsing_agent(prospectus_id: str) -> str:
 # ============================================================================
 
 @tool
+@traceable(name="analyze_query_sections", tags=["tool", "section_analysis"])
 def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
     """
     Analyze which prospectus sections are relevant to the query.
@@ -247,6 +263,7 @@ def analyze_query_sections(user_query: str, prospectus_id: str) -> str:
 
 
 @tool
+@traceable(name="retrieve_sections", tags=["tool", "retrieval"])
 def retrieve_sections(prospectus_id: str, sections_data: str) -> str:
     """
     Retrieve section content from parsed_file based on section titles with hierarchy.

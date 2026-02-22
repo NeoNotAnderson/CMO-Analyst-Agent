@@ -11,6 +11,18 @@ from .nodes import agent_node, should_continue, TOOLS
 from langchain_core.messages import HumanMessage, SystemMessage
 from core.models import Prospectus
 
+# LangSmith tracing
+try:
+    from langsmith import traceable
+    LANGSMITH_AVAILABLE = True
+except ImportError:
+    # Fallback if langsmith not installed
+    def traceable(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    LANGSMITH_AVAILABLE = False
+
 def create_parsing_graph():
     """
     Create the ReAct parsing agent graph.
@@ -49,6 +61,14 @@ def create_parsing_graph():
     app = workflow.compile()
     return app
 
+@traceable(
+    name="parsing_agent_execution",
+    tags=["agent", "parsing"],
+    metadata={
+        "agent_type": "parsing_agent",
+        "framework": "langgraph"
+    }
+)
 def run_agent(prospectus: Prospectus, config=None):
     """
     Run the parsing agent on a prospectus.
@@ -61,6 +81,23 @@ def run_agent(prospectus: Prospectus, config=None):
     Returns:
         Final state after agent execution
     """
+    # Add LangSmith metadata for tracing
+    if config is None:
+        config = {}
+
+    config.setdefault("metadata", {}).update({
+        "prospectus_id": str(prospectus.prospectus_id),
+        "prospectus_name": prospectus.prospectus_name,
+        "parse_status": prospectus.parse_status,
+        "file_size_mb": round(prospectus.prospectus_file.size / (1024 * 1024), 2) if prospectus.prospectus_file else 0,
+    })
+
+    config.setdefault("tags", []).extend([
+        "parsing_agent",
+        f"status:{prospectus.parse_status}",
+        f"prospectus:{prospectus.prospectus_name}"
+    ])
+
     system_message = SystemMessage(content=
         f"""
         You are a financial document parsing assistant specialized in CMO prospectuses.
