@@ -17,7 +17,14 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize LLM with tools
-llm = ChatOpenAI(model='gpt-5-nano', api_key=api_key, temperature=0)
+# Note: LangChain automatically traces LLM calls when LANGCHAIN_TRACING_V2=true
+# This is configured in settings.py and will capture all LLM invocations
+llm = ChatOpenAI(
+    model='gpt-5-nano',
+    api_key=api_key,
+    temperature=0,
+    # Tracing is automatic via environment variables set in settings.py
+)
 
 # Define the list of tools available to the agent
 TOOLS = ALL_TOOLS

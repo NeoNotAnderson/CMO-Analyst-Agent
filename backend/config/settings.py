@@ -169,3 +169,60 @@ CORS_ALLOW_CREDENTIALS = True
 MAX_UPLOAD_SIZE = int(os.getenv('MAX_UPLOAD_SIZE', 52428800))  # 50MB default
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
+
+# OpenAI API Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    print("[WARNING] OPENAI_API_KEY is not set. Agent functionality will not work.")
+    print("[WARNING] Set OPENAI_API_KEY in .env to enable LLM features.")
+
+# ============================================================================
+# LangSmith Configuration (Observability & Tracing)
+# ============================================================================
+
+# LangSmith Tracing Settings
+LANGCHAIN_TRACING_V2 = os.getenv('LANGCHAIN_TRACING_V2', 'false').lower() == 'true'
+LANGCHAIN_API_KEY = os.getenv('LANGCHAIN_API_KEY')
+LANGCHAIN_PROJECT = os.getenv('LANGCHAIN_PROJECT', 'cmo-analyst-agent')
+LANGCHAIN_ENDPOINT = os.getenv('LANGCHAIN_ENDPOINT', 'https://api.smith.langchain.com')
+
+# Environment-specific settings
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'dev')  # dev, staging, or production
+LANGSMITH_SAMPLING_RATE = float(os.getenv('LANGSMITH_SAMPLING_RATE', '1.0'))
+
+# Configure LangSmith environment variables if tracing is enabled
+if LANGCHAIN_TRACING_V2:
+    if not LANGCHAIN_API_KEY:
+        print("[WARNING] LANGCHAIN_TRACING_V2 is enabled but LANGCHAIN_API_KEY is not set.")
+        print("[WARNING] LangSmith tracing will be disabled. Set LANGCHAIN_API_KEY in .env to enable.")
+        LANGCHAIN_TRACING_V2 = False
+    else:
+        # Set environment variables for LangChain/LangSmith SDK
+        os.environ['LANGCHAIN_TRACING_V2'] = 'true'
+        os.environ['LANGCHAIN_API_KEY'] = LANGCHAIN_API_KEY
+        os.environ['LANGCHAIN_ENDPOINT'] = LANGCHAIN_ENDPOINT
+
+        # Environment-specific project naming
+        # Only add suffix if not already present
+        base_project = LANGCHAIN_PROJECT
+        # Remove any existing environment suffixes
+        for suffix in ['-dev', '-staging', '-prod']:
+            if base_project.endswith(suffix):
+                base_project = base_project[:-len(suffix)]
+                break
+
+        # Add appropriate suffix based on environment
+        if ENVIRONMENT == 'production':
+            final_project = f'{base_project}-prod'
+        elif ENVIRONMENT == 'staging':
+            final_project = f'{base_project}-staging'
+        else:
+            final_project = f'{base_project}-dev'
+
+        os.environ['LANGCHAIN_PROJECT'] = final_project
+
+        print(f"[LANGSMITH] Tracing enabled for project: {final_project}")
+        print(f"[LANGSMITH] Environment: {ENVIRONMENT}")
+        print(f"[LANGSMITH] Sampling rate: {LANGSMITH_SAMPLING_RATE * 100}%")
+else:
+    print("[LANGSMITH] Tracing disabled. Set LANGCHAIN_TRACING_V2=true in .env to enable.")

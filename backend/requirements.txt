@@ -2,7 +2,8 @@
 Django==5.0.0
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.9  # For Django database connection
+psycopg[binary]>=3.1.0  # For LangGraph checkpointing
 python-dotenv==1.0.0
 
 # LangGraph and LLM (remove version pins to let pip resolve)
@@ -11,6 +12,7 @@ langchain>=0.2.16
 langchain-openai>=0.1.25
 langchain-core>=0.2.40
 langchain-community>=0.2.16
+langsmith>=0.1.0
 
 # Document Processing
 unstructured>=0.15.0

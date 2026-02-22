@@ -20,10 +20,23 @@ from unstructured.documents.elements import Element
 from pathlib import Path
 from dotenv import load_dotenv
 
+# LangSmith tracing
+try:
+    from langsmith import traceable
+    LANGSMITH_AVAILABLE = True
+except ImportError:
+    # Fallback if langsmith not installed
+    def traceable(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    LANGSMITH_AVAILABLE = False
+
 load_dotenv()
 llm_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @tool
+@traceable(name="check_parse_status", tags=["tool", "parsing", "status"])
 def check_parse_status(prospectus_id: str) -> str:
     """
     Check the current parsing status of a prospectus.
@@ -43,6 +56,7 @@ def check_parse_status(prospectus_id: str) -> str:
         return False
 
 @tool
+@traceable(name="check_parsed_index_exists", tags=["tool", "parsing", "index"])
 def check_parsed_index_exists(prospectus_id: str) -> bool:
     """
     Check if parsed index already exists in the database.
@@ -167,6 +181,7 @@ def add_page_number_to_parsed_index(index_structure: Dict) -> Dict:
     return index_structure
 
 @tool
+@traceable(name="determin_doc_type", tags=["tool", "parsing", "doc_type"])
 def determin_doc_type(file_name: str) -> str:
     """
     Determine document type from filename.
@@ -183,6 +198,7 @@ def determin_doc_type(file_name: str) -> str:
         return "prospectus"
 
 @tool
+@traceable(name="find_index_pages", tags=["tool", "parsing", "index"])
 def find_index_pages(prospectus_id: str, doc_type: str = "supplement") -> List[int]:
     """
     find the index page of the PDF file
@@ -274,6 +290,7 @@ def retrieve_parsed_pages_from_db(prospectus: Prospectus, page_numbers: List[int
         raise
 
 @tool
+@traceable(name="convert_pages_to_images", tags=["tool", "parsing", "image_conversion"])
 def convert_pages_to_images(prospectus_id: str, page_numbers: List[int]) -> str:
     """
     Convert PDF pages to images and store them in the prospectus object.
@@ -386,6 +403,7 @@ def convert_pages_to_images_direct(prospectus: Prospectus, page_numbers: List[in
     return images
 
 @tool
+@traceable(name="parse_page_images_with_openai", tags=["tool", "parsing", "openai_vision"])
 def parse_page_images_with_openai(prospectus_id: str, is_index: bool) -> str:
     """
     Parse and save PDF pages images using OpenAI vision.
@@ -630,6 +648,7 @@ def extract_json(content: str) -> Dict:
         raise ValueError(f"Could not extract JSON from response: {content[:200]}")
 
 @tool
+@traceable(name="parse_prospectus_with_parsed_index", tags=["tool", "parsing", "full_parsing"])
 def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
     """
     Parse the full prospectus using the parsed index structure as a guide.

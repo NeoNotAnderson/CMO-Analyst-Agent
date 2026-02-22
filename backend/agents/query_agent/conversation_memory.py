@@ -28,10 +28,12 @@ import numpy as np
 from openai import OpenAI
 from django.conf import settings
 from core.models import ConversationThread, ChatMessage
+import os
 
 
 # Initialize OpenAI client for embeddings
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+# Use os.getenv to avoid dependency on Django settings being fully loaded
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def get_embedding(text: str, model: str = "text-embedding-3-small") -> List[float]:

@@ -33,8 +33,10 @@ def get_checkpointer():
         f"@{db_config['HOST']}:{db_config['PORT']}/{db_config['NAME']}"
     )
 
-    # Create connection
-    conn = psycopg.connect(connection_string)
+    # Create connection with autocommit for setup
+    # This is required because PostgresSaver.setup() uses CREATE INDEX CONCURRENTLY
+    # which cannot run inside a transaction block
+    conn = psycopg.connect(connection_string, autocommit=True)
 
     # Create and return PostgresSaver
     # This will automatically create the necessary checkpoint tables if they don't exist
