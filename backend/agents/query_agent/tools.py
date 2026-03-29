@@ -561,20 +561,105 @@ def _collect_matching_subsections_by_title(
 
 
 # ============================================================================
+# TOOLS: NEW HYBRID SEARCH RETRIEVAL
+# ============================================================================
+
+@tool
+@traceable(name="retrieve_relevant_chunks", tags=["tool", "hybrid_search"])
+def retrieve_relevant_chunks(user_query: str, prospectus_id: str) -> str:
+    """
+    Retrieve relevant chunks from prospectus using hybrid search (semantic + keyword + reranking).
+
+    This tool replaces the old ToC-based section selection and automatically handles
+    both specific questions (e.g., "What is the coupon rate of Tranche A-1?") and
+    general questions (e.g., "What are the main risk factors?").
+
+    The hybrid search combines:
+    - Semantic search (vector similarity) for conceptual understanding
+    - Keyword search (BM25) for exact term matching
+    - Reciprocal Rank Fusion to merge results
+    - Cross-encoder reranking for final relevance scoring
+
+    Args:
+        user_query: The user's question about the prospectus
+        prospectus_id: Prospectus UUID
+
+    Returns:
+        str: Formatted chunks with metadata and citations
+
+    Example:
+        Query: "What is the coupon rate of Tranche A-1?"
+        Returns: Relevant chunks containing the answer with page numbers and section citations
+    """
+    from core.models import Prospectus
+    from .retrieval import hybrid_search, format_retrieved_chunks
+
+    try:
+        # Check if prospectus exists
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+
+        # Check if chunks exist
+        if not prospectus.chunks.exists():
+            return (
+                "This prospectus has not been indexed for hybrid search yet. "
+                "The chunking process may still be running. Please try again in a moment, "
+                "or use the older section-based retrieval as a fallback."
+            )
+
+        print(f"[TOOL] Running hybrid search for query: {user_query}")
+
+        # Run hybrid search with balanced defaults
+        # The hybrid search + reranking automatically adapts to query type
+        chunks = hybrid_search(
+            query=user_query,
+            prospectus_id=prospectus_id,
+            top_k=15,              # Good default for most queries
+            retrieval_k=40,        # Retrieve more candidates for reranking
+            metadata_filters=None, # No filtering - let search handle it
+            search_strategy='hybrid',  # Balanced semantic + keyword
+            use_reranking=True     # Cross-encoder for final scoring
+        )
+
+        # Format results for LLM consumption
+        formatted_output = format_retrieved_chunks(chunks, include_metadata=True)
+
+        print(f"[TOOL] Retrieved {len(chunks)} chunks")
+        return formatted_output
+
+    except Prospectus.DoesNotExist:
+        return f"Error: Prospectus with ID {prospectus_id} not found."
+    except Exception as e:
+        return f"Error during retrieval: {str(e)}"
+
+
+# ============================================================================
 # TOOL LISTS
 # ============================================================================
 
-ALL_TOOLS = [
-    # Query classification and routing
-    classify_query,
+# New hybrid search tools (primary)
+NEW_TOOLS = [
+    retrieve_relevant_chunks,
+]
 
-    # Prospectus management
-    get_prospectus_status,
-
-    # Parsing coordination
-    trigger_parsing_agent,
-
-    # Section analysis and retrieval
+# Legacy ToC-based tools (kept for backward compatibility)
+LEGACY_TOOLS = [
     analyze_query_sections,
     retrieve_sections,
 ]
+
+# Core tools (always available)
+CORE_TOOLS = [
+    classify_query,
+    get_prospectus_status,
+    trigger_parsing_agent,
+]
+
+# Default tool set: Use NEW hybrid search tool + core tools
+# This is the simplified, production-ready configuration
+ALL_TOOLS = CORE_TOOLS + NEW_TOOLS
+
+# Alternative: Use legacy ToC-based tools (for backward compatibility if needed)
+# ALL_TOOLS = CORE_TOOLS + LEGACY_TOOLS
+
+# Alternative: Use both (for A/B testing or gradual migration)
+# ALL_TOOLS = CORE_TOOLS + NEW_TOOLS + LEGACY_TOOLS

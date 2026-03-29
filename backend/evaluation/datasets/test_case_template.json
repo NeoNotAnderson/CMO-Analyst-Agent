@@ -1,0 +1,34 @@
+[
+  {
+    "test_id": "unique_test_identifier",
+    "query": "User's question to the agent",
+    "prospectus_id": "UUID of the prospectus document",
+    "prospectus_name": "Human-readable name of the prospectus",
+    "session_id": "optional_session_identifier",
+    "user_id": "optional_user_identifier",
+    "reference_answer": "Expected answer or key points that should be in the response",
+    "query_type": "section_specific",
+    "category": "general",
+    "difficulty": "medium",
+    "expected_trajectory": "Description of expected tool usage pattern (e.g., 'classify_query -> analyze_query_sections -> retrieve_sections')",
+    "reference_sections": [
+      "Section name 1",
+      "Section name 2"
+    ],
+    "expected_facts": [
+      "Fact 1 that should appear in the answer",
+      "Fact 2 that should appear in the answer"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "faithfulness",
+      "helpfulness",
+      "correctness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluator_name",
+      "notes": "Any additional context about this test case"
+    }
+  }
+]

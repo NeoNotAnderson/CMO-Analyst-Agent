@@ -1,0 +1,319 @@
+[
+  {
+    "test_id": "golden_001",
+    "query": "What tranches are in this deal?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "The deal consists of Class A-1, A-2, A-3, A-4, A-S, B, C, D, E, F, and X-A certificates.",
+    "query_type": "section_specific",
+    "category": "structure",
+    "difficulty": "easy",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Description of the Certificates",
+      "Certificate Table"
+    ],
+    "expected_facts": [
+      "Class A tranches (A-1, A-2, A-3, A-4, A-S)",
+      "Subordinate classes (B, C, D, E, F)",
+      "Interest-only class (X-A)"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "helpfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Basic structural query - tests ability to extract deal structure"
+    }
+  },
+  {
+    "test_id": "golden_002",
+    "query": "What is the credit enhancement for the Class A certificates?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "The Class A certificates have credit enhancement of 32.5%, consisting of subordination from Classes B through F plus the overcollateralization.",
+    "query_type": "calculation",
+    "category": "structure",
+    "difficulty": "medium",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Credit Enhancement",
+      "Certificate Table",
+      "Subordination Levels"
+    ],
+    "expected_facts": [
+      "Credit enhancement percentage for Class A",
+      "Subordination structure",
+      "Overcollateralization amount"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "faithfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Tests understanding of credit enhancement concepts and calculation"
+    }
+  },
+  {
+    "test_id": "golden_003",
+    "query": "How are principal payments distributed in a sequential pay structure?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "In a sequential pay structure, principal payments are distributed to the most senior class first (Class A-1) until it is paid in full, then to the next class (A-2), and so on down the payment priority waterfall.",
+    "query_type": "definition",
+    "category": "cash_flow",
+    "difficulty": "medium",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Payment Priority",
+      "Distribution of Principal",
+      "Cash Flow Waterfall"
+    ],
+    "expected_facts": [
+      "Sequential payment order",
+      "Senior classes paid first",
+      "Complete payoff before next class receives principal"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "faithfulness",
+      "helpfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Tests understanding of cash flow mechanics"
+    }
+  },
+  {
+    "test_id": "golden_004",
+    "query": "What is a Z-tranche?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "A Z-tranche (accretion bond) does not receive current interest payments. Instead, its interest accretes (adds to the principal balance) until more senior classes are paid off. Once senior classes are retired, the Z-tranche begins receiving both principal and accreted interest payments.",
+    "query_type": "definition",
+    "category": "structure",
+    "difficulty": "medium",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Description of Class Z",
+      "Accretion of Interest",
+      "Payment Priority"
+    ],
+    "expected_facts": [
+      "No current interest payments",
+      "Interest accretes to principal",
+      "Payments begin after senior classes paid off"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "helpfulness",
+      "faithfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Common definitional query - tests knowledge retrieval"
+    }
+  },
+  {
+    "test_id": "golden_005",
+    "query": "What are the key risk factors for investing in this security?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "Key risk factors include: (1) Credit risk from underlying borrower defaults, (2) Interest rate risk affecting prepayment speeds and market value, (3) Liquidity risk in the secondary market, (4) Subordination risk for junior classes, (5) Special servicer conflicts of interest, and (6) Property market conditions affecting collateral values.",
+    "query_type": "section_specific",
+    "category": "risk",
+    "difficulty": "hard",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Risk Factors",
+      "Credit Risk",
+      "Market Risk",
+      "Special Servicing"
+    ],
+    "expected_facts": [
+      "Credit/default risk",
+      "Interest rate risk",
+      "Liquidity risk",
+      "Subordination risk",
+      "Servicer conflicts",
+      "Property market risk"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "helpfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Complex query requiring synthesis of multiple risk sections"
+    }
+  },
+  {
+    "test_id": "golden_006",
+    "query": "Who is the master servicer?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "The master servicer for this transaction is [Specific Servicer Name].",
+    "query_type": "section_specific",
+    "category": "general",
+    "difficulty": "easy",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Transaction Parties",
+      "Master Servicer",
+      "Servicing Arrangements"
+    ],
+    "expected_facts": [
+      "Master servicer name",
+      "Role in transaction"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Simple factual retrieval - baseline test"
+    }
+  },
+  {
+    "test_id": "golden_007",
+    "query": "Compare the yields between Class A and Class B certificates",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "Class A certificates have a lower yield of approximately 5.2% due to their senior position and lower risk profile, while Class B certificates offer a higher yield of approximately 6.8% to compensate investors for the increased subordination risk and lower credit enhancement.",
+    "query_type": "comparison",
+    "category": "structure",
+    "difficulty": "hard",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Certificate Table",
+      "Pricing",
+      "Yield Information",
+      "Risk and Return"
+    ],
+    "expected_facts": [
+      "Class A yield percentage",
+      "Class B yield percentage",
+      "Yield differential explanation",
+      "Risk-return relationship"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "helpfulness",
+      "faithfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Comparison query requiring synthesis across multiple data points"
+    }
+  },
+  {
+    "test_id": "golden_008",
+    "query": "What triggers an event of default?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "Events of default include: (1) Failure to pay principal or interest when due, (2) Breach of covenants or representations, (3) Bankruptcy or insolvency of the depositor or servicer, (4) Failure to maintain required insurance, and (5) Material adverse change in the collateral or borrower's financial condition as specified in the pooling and servicing agreement.",
+    "query_type": "section_specific",
+    "category": "legal",
+    "difficulty": "medium",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Events of Default",
+      "Pooling and Servicing Agreement",
+      "Remedies"
+    ],
+    "expected_facts": [
+      "Payment default",
+      "Covenant breach",
+      "Bankruptcy events",
+      "Insurance requirements",
+      "Material adverse change"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness",
+      "faithfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Legal/contractual query - tests understanding of default provisions"
+    }
+  },
+  {
+    "test_id": "golden_009",
+    "query": "Explain the lockout period",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "The lockout period is the initial period (typically 2 years) during which the underlying mortgage loans cannot be prepaid. This protects investors from early prepayment risk and provides certainty of cash flows during this period. After the lockout period ends, borrowers may prepay subject to prepayment penalties or yield maintenance provisions.",
+    "query_type": "definition",
+    "category": "cash_flow",
+    "difficulty": "medium",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Prepayment Provisions",
+      "Lockout Period",
+      "Yield Maintenance"
+    ],
+    "expected_facts": [
+      "Lockout period duration",
+      "No prepayments during lockout",
+      "Protection for investors",
+      "Post-lockout prepayment terms"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "helpfulness",
+      "faithfulness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Definitional query with explanation of investor impact"
+    }
+  },
+  {
+    "test_id": "golden_010",
+    "query": "What is the total pool balance?",
+    "prospectus_id": "example-prospectus-uuid-001",
+    "prospectus_name": "Example CMBS Deal 2024-1",
+    "reference_answer": "The total pool balance is $500,000,000 across 75 mortgage loans secured by commercial properties.",
+    "query_type": "section_specific",
+    "category": "structure",
+    "difficulty": "easy",
+    "expected_trajectory": "classify_query -> analyze_query_sections -> retrieve_sections",
+    "reference_sections": [
+      "Mortgage Pool",
+      "Pool Statistics",
+      "Deal Summary"
+    ],
+    "expected_facts": [
+      "Total pool balance amount",
+      "Number of loans",
+      "Property type"
+    ],
+    "evaluation_focus": [
+      "document_relevance",
+      "correctness"
+    ],
+    "metadata": {
+      "created_date": "2024-01-15",
+      "created_by": "evaluation_team",
+      "notes": "Simple factual query - baseline numerical retrieval"
+    }
+  }
+]

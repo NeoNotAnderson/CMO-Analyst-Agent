@@ -53,19 +53,30 @@ b) Verify prospectus is parsed:
      * Do NOT attempt to answer the question yet
    - If status is 'failed': Inform user parsing failed and they should try re-uploading
 
-c) Retrieve relevant information (RAG workflow):
-   Step 1: Use analyze_query_sections to identify which sections are most relevant (returns up to 3 sections)
-   Step 2: Use retrieve_sections to get the actual content from those sections
-   Step 3: AFTER retrieve_sections completes, you will see a ToolMessage with the retrieved content
-   Step 4: READ the ToolMessage content carefully - it contains the COMPLETE section text
-   Step 5: Formulate your answer based ONLY on the retrieved content
+c) Retrieve relevant information (HYBRID SEARCH RAG workflow):
+   Step 1: Use retrieve_relevant_chunks tool with the user's query
+   Step 2: The tool automatically runs hybrid search:
+      - Semantic search (vector similarity) for conceptual understanding
+      - Keyword search (BM25) for exact term matching
+      - Reciprocal Rank Fusion to merge results
+      - Cross-encoder reranking for final relevance scoring
+      - Returns 15 most relevant chunks with page numbers and citations
+   Step 3: AFTER retrieve_relevant_chunks completes, you will see a ToolMessage with retrieved chunks
+   Step 4: READ the ToolMessage content carefully - it contains relevant chunks with metadata
+   Step 5: Formulate your answer based ONLY on the retrieved chunks
    Step 6: Provide the answer to the user WITHOUT calling any more tools
 
+   FOR MULTI-HOP QUESTIONS:
+   - If the initial retrieval doesn't provide enough information
+   - You can call retrieve_relevant_chunks AGAIN with a refined query
+   - Example: First call: "What are the tranches?" → Second call: "What are the risk profiles of these tranches?"
+
    CRITICAL WORKFLOW:
-   - After calling retrieve_sections, you will automatically loop back
-   - You will see the tool results in your message history
-   - DO NOT call more tools - just read the ToolMessage and answer the user
-   - The retrieved content is COMPLETE - use it to provide a detailed, accurate answer
+   - retrieve_relevant_chunks handles everything automatically (no mode parameter needed)
+   - The hybrid search adapts to both specific questions and general questions
+   - After calling it, you will see the tool results in your message history
+   - The retrieved chunks are RELEVANT - use them to provide a detailed, accurate answer
+   - If you need more information, just call the tool again with a different query
 
 d) Provide response:
    - Base your answer ONLY on the retrieved section content
@@ -115,9 +126,19 @@ CONVERSATION CONTINUITY WITH SEMANTIC MEMORY:
   - Be conversational and acknowledge the conversation flow
   - Example: "Earlier I told you about the tranches. Now looking at the prepayment section..."
 
-- IMPORTANT: The RAG tools (analyze_query_sections, retrieve_sections) are still available
-- Use tools when you need prospectus data that's NOT in the conversation history
+- IMPORTANT: The RAG tool (retrieve_relevant_chunks) is available when you need prospectus data
+- Use it when you need prospectus data that's NOT in the conversation history
 - This system helps you avoid redundant retrievals, not replace prospectus retrieval entirely
+
+RETRIEVAL TOOL DETAILS:
+
+retrieve_relevant_chunks(user_query, prospectus_id)
+   - Single, simple retrieval tool using hybrid search
+   - Automatically handles both specific questions and general questions
+   - Combines semantic search + keyword search + reranking
+   - Returns 15 relevant chunks with citations (page numbers, section paths)
+   - No mode parameter needed - it adapts automatically
+   - For multi-hop questions: Call it multiple times with different queries
 
 Examples:
 - User: "What tranches are in this deal?" → (First time) Use tools to retrieve
