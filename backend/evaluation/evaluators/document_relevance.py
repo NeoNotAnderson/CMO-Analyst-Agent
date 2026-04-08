@@ -1,10 +1,10 @@
 """
 Document Relevance Evaluator
 
-Unit test evaluator that checks if retrieved documents/sections are relevant to the query.
+Unit test evaluator that checks if retrieved documents/chunks are relevant to the query.
 This is a fast, deterministic evaluator using keyword matching and semantic similarity.
 
-Evaluation Target: Trajectory (tool outputs, specifically retrieve_sections)
+Evaluation Target: Trajectory (tool outputs, specifically retrieve_relevant_chunks)
 Evaluation Type: Unit Test (deterministic, no LLM needed)
 """
 
@@ -15,7 +15,7 @@ from langsmith.evaluation import evaluator
 
 
 def extract_retrieved_sections(run: Run) -> List[str]:
-    """Extract section names from retrieve_sections tool outputs in the run."""
+    """Extract section/chunk names from retrieve_relevant_chunks tool outputs in the run."""
     sections = []
 
     if not run.outputs:
@@ -24,13 +24,30 @@ def extract_retrieved_sections(run: Run) -> List[str]:
     # Check if this is the main agent run with child runs
     if hasattr(run, 'child_runs') and run.child_runs:
         for child_run in run.child_runs:
-            # Look for retrieve_sections tool calls
-            if child_run.name == 'retrieve_sections':
+            # Look for retrieve_relevant_chunks tool calls (NEW hybrid search)
+            if child_run.name == 'retrieve_relevant_chunks':
                 output = child_run.outputs
                 if output and isinstance(output, dict):
-                    # Extract section names from the output
+                    # Extract chunk metadata from the output
                     output_str = str(output.get('output', ''))
-                    # Pattern: Section names are typically in quotes or after "Section:" or "###"
+                    # Pattern: Chunks include section_path in metadata
+                    # Format: "Section: {section_path}" or "Chunk {N}: {section_path}"
+                    section_patterns = [
+                        r'Section:\s*([^\n]+)',
+                        r'Chunk\s+\d+:\s*([^\n]+)',
+                        r'section_path["\']:\s*["\']([^"\']+)',
+                        r'###\s*([^\n]+)',
+                        r'"([^"]+)"',
+                    ]
+                    for pattern in section_patterns:
+                        matches = re.findall(pattern, output_str)
+                        sections.extend(matches)
+
+            # Also support legacy retrieve_sections tool (for backward compatibility)
+            elif child_run.name == 'retrieve_sections':
+                output = child_run.outputs
+                if output and isinstance(output, dict):
+                    output_str = str(output.get('output', ''))
                     section_patterns = [
                         r'Section:\s*([^\n]+)',
                         r'###\s*([^\n]+)',
@@ -176,7 +193,8 @@ def document_relevance_evaluator(run: Run, example: Example) -> Dict[str, Any]:
     """
     LangSmith evaluator for document relevance.
 
-    Checks if the sections retrieved during agent execution are relevant to the query.
+    Checks if the chunks/sections retrieved during agent execution are relevant to the query.
+    Supports both new hybrid search (retrieve_relevant_chunks) and legacy section retrieval (retrieve_sections).
     Uses expected_sections from metadata if available, otherwise uses keyword matching.
 
     Args:
@@ -200,7 +218,7 @@ def document_relevance_evaluator(run: Run, example: Example) -> Dict[str, Any]:
     if example.metadata:
         expected_sections = example.metadata.get('reference_sections')
 
-    # Extract retrieved sections from run
+    # Extract retrieved sections/chunks from run
     retrieved_sections = extract_retrieved_sections(run)
 
     # Check relevance

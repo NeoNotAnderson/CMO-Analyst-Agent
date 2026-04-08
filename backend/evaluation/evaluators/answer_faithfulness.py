@@ -3,6 +3,7 @@ Answer Faithfulness Evaluator
 
 LLM-as-a-Judge evaluator that checks if the agent's answer is grounded in retrieved documents.
 Detects hallucinations by verifying all claims are supported by source documents.
+Supports both hybrid search (retrieve_relevant_chunks) and legacy section retrieval (retrieve_sections).
 
 Evaluation Target: Final Response
 Evaluation Type: LLM-as-a-Judge (GPT-4)
@@ -58,7 +59,7 @@ You must respond with a valid JSON object in this exact format:
 
 
 def extract_retrieved_content(run: Run) -> str:
-    """Extract content from retrieve_sections tool outputs."""
+    """Extract content from retrieve_relevant_chunks or retrieve_sections tool outputs."""
     sections = []
 
     if not run.outputs:
@@ -67,8 +68,16 @@ def extract_retrieved_content(run: Run) -> str:
     # Check if this is the main agent run with child runs
     if hasattr(run, 'child_runs') and run.child_runs:
         for child_run in run.child_runs:
-            # Look for retrieve_sections tool calls
-            if child_run.name == 'retrieve_sections':
+            # Look for retrieve_relevant_chunks tool calls (NEW hybrid search)
+            if child_run.name == 'retrieve_relevant_chunks':
+                output = child_run.outputs
+                if output and isinstance(output, dict):
+                    content = output.get('output', '')
+                    if content:
+                        sections.append(str(content))
+
+            # Also support legacy retrieve_sections tool (for backward compatibility)
+            elif child_run.name == 'retrieve_sections':
                 output = child_run.outputs
                 if output and isinstance(output, dict):
                     content = output.get('output', '')
@@ -166,7 +175,8 @@ def answer_faithfulness_evaluator(run: Run, example: Example) -> Dict[str, Any]:
     """
     LangSmith evaluator for answer faithfulness.
 
-    Checks if the agent's answer is grounded in retrieved documents.
+    Checks if the agent's answer is grounded in retrieved documents/chunks.
+    Supports both hybrid search (retrieve_relevant_chunks) and legacy retrieval (retrieve_sections).
     Uses GPT-4 to identify claims and verify they're supported by sources.
 
     Args:

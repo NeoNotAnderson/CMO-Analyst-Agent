@@ -1,6 +1,6 @@
 # Evaluators Quick Start Guide
 
-Quick reference for using the 4 custom evaluators.
+Quick reference for using the 5 custom evaluators (4 core + 1 trajectory).
 
 ---
 
@@ -17,12 +17,12 @@ export LANGCHAIN_API_KEY="your-langsmith-api-key"
 
 ---
 
-## The 4 Evaluators
+## The 5 Evaluators
 
 ### 1. Document Relevance (Unit Test)
 ✅ **Fast** • 🎯 **Deterministic** • ⚡ **No LLM cost**
 
-Checks if retrieved sections are relevant to the query.
+Checks if retrieved chunks/sections are relevant to the query. Supports both hybrid search (`retrieve_relevant_chunks`) and legacy retrieval (`retrieve_sections`).
 
 ```python
 from evaluation.evaluators import evaluate_document_relevance
@@ -39,7 +39,7 @@ print(f"Score: {result['score']:.2f}")  # 1.00 (perfect match)
 ### 2. Answer Faithfulness (LLM-as-a-Judge)
 🤖 **GPT-4** • 🔍 **Hallucination Detection** • 💰 **~$0.01/eval**
 
-Verifies all claims are supported by source documents.
+Verifies all claims are supported by source documents. Works with both hybrid search and legacy retrieval.
 
 ```python
 from evaluation.evaluators import evaluate_answer_faithfulness
@@ -96,11 +96,30 @@ print(f"Matched: {result['metadata']['key_points_matched']}")
 print(f"Missing: {result['metadata']['key_points_missing']}")
 ```
 
+### 5. Trajectory (Rule-Based)
+⚡ **Fast** • 🎯 **Deterministic** • ⚡ **No LLM cost**
+
+Evaluates agent's tool call sequence for correctness and efficiency.
+
+```python
+from evaluation.workflows import evaluate_trajectory
+
+result = evaluate_trajectory(
+    actual_trajectory=['classify_query', 'retrieve_relevant_chunks'],
+    expected_trajectory='classify_query -> retrieve_relevant_chunks'
+)
+
+print(f"Score: {result['score']:.2f}")
+print(f"Matched Tools: {result['matched_tools']}")
+print(f"Extra Tools: {result['extra_tools']}")
+print(f"Has Duplicates: {result['has_duplicates']}")
+```
+
 ---
 
 ## Using with LangSmith
 
-### Run All Evaluators on Dataset
+### Run All 5 Evaluators on Dataset
 
 ```python
 from langsmith.evaluation import evaluate
@@ -110,6 +129,7 @@ from evaluation.evaluators import (
     answer_helpfulness_evaluator,
     answer_correctness_evaluator
 )
+from evaluation.workflows import trajectory_evaluator
 
 # Define your target function
 def run_query(inputs):
@@ -120,15 +140,18 @@ def run_query(inputs):
         prospectus_id=inputs.get('prospectus_id')
     )
 
-# Run evaluation
+# Run evaluation with all 5 evaluators
 results = evaluate(
     run_query,
     data="cmo-analyst-golden-v1",  # Your dataset name
     evaluators=[
+        # Core 4: Output quality
         document_relevance_evaluator,
         answer_faithfulness_evaluator,
         answer_helpfulness_evaluator,
-        answer_correctness_evaluator
+        answer_correctness_evaluator,
+        # 5th: Execution path
+        trajectory_evaluator
     ],
     experiment_prefix="eval-run"
 )

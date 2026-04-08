@@ -46,13 +46,13 @@ def extract_final_answer(run: Run) -> str:
 
 def extract_retrieved_sections(run: Run) -> List[str]:
     """
-    Extract section names from retrieve_sections tool outputs.
+    Extract section/chunk names from retrieve_relevant_chunks or retrieve_sections tool outputs.
 
     Args:
         run: The LangSmith run object
 
     Returns:
-        List of section names that were retrieved
+        List of section/chunk names that were retrieved
     """
     sections = []
 
@@ -62,8 +62,16 @@ def extract_retrieved_sections(run: Run) -> List[str]:
     # Check if this run has child runs (tool calls)
     if hasattr(run, 'child_runs') and run.child_runs:
         for child_run in run.child_runs:
-            # Look for retrieve_sections tool calls
-            if child_run.name == 'retrieve_sections':
+            # Look for retrieve_relevant_chunks tool calls (NEW hybrid search)
+            if child_run.name == 'retrieve_relevant_chunks':
+                output = child_run.outputs
+                if output and isinstance(output, dict):
+                    content = output.get('output', '')
+                    if content:
+                        sections.append(str(content))
+
+            # Also support legacy retrieve_sections tool (for backward compatibility)
+            elif child_run.name == 'retrieve_sections':
                 output = child_run.outputs
                 if output and isinstance(output, dict):
                     content = output.get('output', '')
@@ -75,16 +83,16 @@ def extract_retrieved_sections(run: Run) -> List[str]:
 
 def extract_retrieved_content(run: Run) -> str:
     """
-    Extract full content from retrieve_sections tool outputs.
+    Extract full content from retrieve_relevant_chunks or retrieve_sections tool outputs.
 
     Args:
         run: The LangSmith run object
 
     Returns:
-        Combined content from all retrieved sections
+        Combined content from all retrieved sections/chunks
     """
     sections = extract_retrieved_sections(run)
-    return "\n\n---\n\n".join(sections) if sections else "No sections retrieved"
+    return "\n\n---\n\n".join(sections) if sections else "No sections/chunks retrieved"
 
 
 def extract_tool_calls(run: Run) -> List[Dict[str, Any]]:
