@@ -46,7 +46,7 @@ def check_parse_status(prospectus_id: str) -> str:
 
     Returns:
         str: Parse status (one of: 'pending', 'parsing_index', 'parsing_sections',
-             'completed', 'failed')
+             'creating_chunks', 'completed', 'failed')
     """
     try:
         prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
@@ -738,6 +738,11 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
             add_sample_text_to_sections(index['sections'])
 
         prospectus.parsed_file = index
+
+        # Update status to creating_chunks before starting chunking
+        prospectus.parse_status = 'creating_chunks'
+        prospectus.save()
+        print(f"[STATUS] Updated parse_status to: creating_chunks")
 
         # NEW: Generate chunks and embeddings for hybrid search
         print(f"[CHUNKING] Starting chunking and embedding generation...")

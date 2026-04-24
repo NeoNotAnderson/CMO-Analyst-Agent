@@ -35,6 +35,7 @@ class Prospectus(models.Model):
         PENDING = 'pending', 'Pending'
         PARSING_INDEX = 'parsing_index', 'Parsing Index'
         PARSING_SECTIONS = 'parsing_sections', 'Parsing Sections'
+        CREATING_CHUNKS = 'creating_chunks', 'Creating Chunks'
         COMPLETED = 'completed', 'Completed'
         FAILED = 'failed', 'Failed'
 
