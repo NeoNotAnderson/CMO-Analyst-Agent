@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: cmo_analyst_db
     environment:
       POSTGRES_DB: cmo_analyst_db

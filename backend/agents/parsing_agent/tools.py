@@ -46,7 +46,7 @@ def check_parse_status(prospectus_id: str) -> str:
 
     Returns:
         str: Parse status (one of: 'pending', 'parsing_index', 'parsing_sections',
-             'completed', 'failed')
+             'creating_chunks', 'completed', 'failed')
     """
     try:
         prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
@@ -738,6 +738,50 @@ def parse_prospectus_with_parsed_index(prospectus_id: str) -> str:
             add_sample_text_to_sections(index['sections'])
 
         prospectus.parsed_file = index
+
+        # Update status to creating_chunks before starting chunking
+        prospectus.parse_status = 'creating_chunks'
+        prospectus.save()
+        print(f"[STATUS] Updated parse_status to: creating_chunks")
+
+        # NEW: Generate chunks and embeddings for hybrid search
+        print(f"[CHUNKING] Starting chunking and embedding generation...")
+        try:
+            from .chunking import process_prospectus_to_chunks
+            from core.models import ProspectusChunk
+
+            chunks_data = process_prospectus_to_chunks(index)
+            print(f"[CHUNKING] Generated {len(chunks_data)} chunks")
+
+            # Bulk create ProspectusChunk records
+            chunk_objects = [
+                ProspectusChunk(
+                    prospectus=prospectus,
+                    chunk_text=chunk['chunk_text'],
+                    chunk_index=chunk['chunk_index'],
+                    embedding=chunk['embedding'],
+                    metadata=chunk['metadata']
+                )
+                for chunk in chunks_data
+            ]
+
+            ProspectusChunk.objects.bulk_create(chunk_objects, batch_size=100)
+            print(f"[CHUNKING] Saved {len(chunk_objects)} chunks to database")
+
+            # Mark in metadata that chunking is complete
+            if not prospectus.metadata:
+                prospectus.metadata = {}
+            prospectus.metadata['chunks_generated'] = True
+            prospectus.metadata['chunk_count'] = len(chunk_objects)
+
+        except Exception as e:
+            print(f"[CHUNKING ERROR] Failed to generate chunks: {e}")
+            # Don't fail the entire parsing - chunks can be regenerated later
+            if not prospectus.metadata:
+                prospectus.metadata = {}
+            prospectus.metadata['chunks_generated'] = False
+            prospectus.metadata['chunking_error'] = str(e)
+
         prospectus.parse_status = 'completed'
         prospectus.save()
 

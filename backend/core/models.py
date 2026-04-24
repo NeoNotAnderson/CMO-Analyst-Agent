@@ -10,6 +10,7 @@ This module defines the core data structures for storing:
 
 from django.db import models
 from django.contrib.auth.models import User
+from pgvector.django import VectorField
 import uuid
 
 
@@ -34,6 +35,7 @@ class Prospectus(models.Model):
         PENDING = 'pending', 'Pending'
         PARSING_INDEX = 'parsing_index', 'Parsing Index'
         PARSING_SECTIONS = 'parsing_sections', 'Parsing Sections'
+        CREATING_CHUNKS = 'creating_chunks', 'Creating Chunks'
         COMPLETED = 'completed', 'Completed'
         FAILED = 'failed', 'Failed'
 
@@ -172,4 +174,72 @@ class AgentCheckpoint(models.Model):
 
     def __str__(self):
         return f"Checkpoint {self.checkpoint_id} for thread {self.thread_id}"
+
+
+class ProspectusChunk(models.Model):
+    """
+    Stores text chunks from parsed prospectuses with embeddings for hybrid search.
+
+    Each chunk represents a semantically meaningful segment of text (paragraph-level)
+    with metadata for filtering and citation. Enables hybrid search combining
+    semantic similarity (vector search) and keyword matching (BM25).
+
+    Attributes:
+        chunk_id: UUID primary key
+        prospectus: Foreign key to parent Prospectus
+        chunk_text: The actual text content of this chunk
+        chunk_index: Sequential position in document (for ordering)
+        embedding: 1536-dimensional vector for semantic search (OpenAI text-embedding-3-small)
+        metadata: JSON field containing:
+            - section_title (str): Title of the section this chunk belongs to
+            - section_path (list): Hierarchical breadcrumb, e.g., ["SUMMARY", "General"]
+            - page_num (int): Page number in the prospectus
+            - token_count (int): Number of tokens in chunk_text
+            - has_table (bool): Whether this chunk contains table data
+            - is_table_description (bool): Whether this is a natural language table description
+        created_at: Timestamp when chunk was created
+    """
+    chunk_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    prospectus = models.ForeignKey(
+        Prospectus,
+        on_delete=models.CASCADE,
+        related_name='chunks',
+        db_index=True
+    )
+    chunk_text = models.TextField(
+        help_text="The actual text content of this chunk"
+    )
+    chunk_index = models.IntegerField(
+        help_text="Sequential position in document (0-indexed)",
+        db_index=True
+    )
+    embedding = VectorField(
+        dimensions=1536,
+        help_text="1536-dim embedding vector for semantic search"
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Section path, page number, token count, table flags, etc."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'prospectus_chunk'
+        ordering = ['prospectus', 'chunk_index']
+        indexes = [
+            models.Index(fields=['prospectus', 'chunk_index']),
+            models.Index(fields=['prospectus', 'created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['prospectus', 'chunk_index'],
+                name='unique_chunk_index_per_prospectus'
+            )
+        ]
+
+    def __str__(self):
+        section_path = self.metadata.get('section_path', [])
+        path_str = ' > '.join(section_path) if section_path else 'Unknown'
+        return f"Chunk {self.chunk_index} [{path_str}]: {self.chunk_text[:50]}..."
 
