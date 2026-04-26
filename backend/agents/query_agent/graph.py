@@ -10,6 +10,7 @@ from .state import QueryState
 from .nodes import agent_node, should_continue, TOOLS
 from langchain_core.messages import HumanMessage, SystemMessage
 from .prompts import QUERY_AGENT_SYSTEM_PROMPT
+from .rag_logger import log_query_start, log_query_end
 import uuid
 
 # LangSmith tracing
@@ -208,6 +209,14 @@ def run_agent(session_id: str, user_query: str, user_id: str = None, config=None
         'errors': []
     }
 
+    log_query_start(
+        session_id=session_id,
+        thread_id=thread_id,
+        user_query=user_query,
+        prospectus_id=active_prospectus_id,
+        prospectus_name=prospectus_name,
+    )
+
     print(f"\n{'='*60}")
     print(f"[QUERY AGENT] Starting query")
     print(f"Session ID: {session_id}")
@@ -219,6 +228,12 @@ def run_agent(session_id: str, user_query: str, user_id: str = None, config=None
     print(f"{'='*60}\n")
 
     result = agent.invoke(state, config=config)
+
+    # Log final answer
+    messages = result.get("messages", [])
+    last = messages[-1] if messages else None
+    final_answer = last.content if last and hasattr(last, "content") else str(last)
+    log_query_end(final_answer)
 
     print(f"\n{'='*60}")
     print(f"[QUERY AGENT] Query completed")
