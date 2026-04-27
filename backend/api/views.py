@@ -415,10 +415,148 @@ def set_active_prospectus_view(request):
             'conversation_history': []
         }
 
-    return Response({
+    # Check if parsing is incomplete and needs user action
+    incomplete_statuses = ['pending', 'parsing_index', 'parsing_sections', 'creating_chunks']
+    needs_parsing = prospectus.parse_status in incomplete_statuses
+
+    response_data = {
         'message': 'Active prospectus updated',
         'prospectus_id': str(prospectus.prospectus_id),
-        'prospectus_name': prospectus.prospectus_name
+        'prospectus_name': prospectus.prospectus_name,
+        'parse_status': prospectus.parse_status,
+        'needs_parsing': needs_parsing
+    }
+
+    # Add helpful message if parsing is needed
+    if needs_parsing:
+        status_messages = {
+            'pending': 'This prospectus has not been parsed yet.',
+            'parsing_index': 'This prospectus parsing was interrupted during index parsing.',
+            'parsing_sections': 'This prospectus parsing was interrupted during section parsing.',
+            'creating_chunks': 'This prospectus parsing was interrupted during chunking'
+        }
+        response_data['parsing_message'] = status_messages.get(
+            prospectus.parse_status,
+            'This prospectus parsing is incomplete.'
+        )
+
+    print(f"\n[SET_ACTIVE_PROSPECTUS] User: {request.user.username}")
+    print(f"[SET_ACTIVE_PROSPECTUS] Prospectus: {prospectus.prospectus_name}")
+    print(f"[SET_ACTIVE_PROSPECTUS] Status: {prospectus.parse_status}")
+    print(f"[SET_ACTIVE_PROSPECTUS] Needs parsing: {needs_parsing}")
+    if needs_parsing:
+        print(f"[SET_ACTIVE_PROSPECTUS] Frontend should prompt user to resume parsing")
+
+    return Response(response_data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def resume_parsing(request):
+    """
+    Resume or start parsing for a prospectus.
+
+    This endpoint is called when the user confirms they want to parse/resume parsing
+    an incomplete prospectus. It triggers the parsing agent in the background.
+
+    Expected Request:
+    {
+        "prospectus_id": "uuid"
+    }
+
+    Expected Response:
+    {
+        "message": "Parsing started/resumed successfully",
+        "prospectus_id": "uuid",
+        "prospectus_name": "filename.pdf",
+        "previous_status": "parsing_sections",
+        "new_status": "parsing_sections"
+    }
+    """
+    print(f"\n[RESUME_PARSING] Endpoint called by user: {request.user.username}")
+    print(f"[RESUME_PARSING] Request data: {request.data}")
+
+    prospectus_id = request.data.get('prospectus_id')
+    if not prospectus_id:
+        return Response(
+            {'error': 'prospectus_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Validate prospectus exists and user has access
+    try:
+        prospectus = Prospectus.objects.get(prospectus_id=prospectus_id)
+        if prospectus.created_by != request.user:
+            return Response(
+                {'error': 'You do not have access to this prospectus'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    except Prospectus.DoesNotExist:
+        return Response(
+            {'error': 'Prospectus not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Check if prospectus is already completed
+    if prospectus.parse_status == 'completed':
+        return Response(
+            {
+                'message': 'Prospectus is already fully parsed',
+                'prospectus_id': str(prospectus.prospectus_id),
+                'prospectus_name': prospectus.prospectus_name,
+                'parse_status': prospectus.parse_status
+            },
+            status=status.HTTP_200_OK
+        )
+
+    # Store the previous status and prospectus_id for the background thread
+    previous_status = prospectus.parse_status
+    prospectus_id_for_thread = str(prospectus.prospectus_id)
+    prospectus_name = prospectus.prospectus_name
+
+    # Trigger parsing in background
+    def parse_in_background():
+        try:
+            # Re-fetch the prospectus in the background thread to avoid stale object issues
+            from core.models import Prospectus
+            prosp = Prospectus.objects.get(prospectus_id=prospectus_id_for_thread)
+
+            # Update status if it's still pending
+            if prosp.parse_status == 'pending':
+                prosp.parse_status = 'parsing_index'
+                prosp.save()
+
+            print(f"[RESUME_PARSING] Starting/resuming parsing for: {prosp.prospectus_name}")
+            print(f"[RESUME_PARSING] Current status: {prosp.parse_status}")
+
+            # Run parsing agent (will resume from current status)
+            run_agent(prosp)
+
+            print(f"[RESUME_PARSING] Parsing completed for: {prosp.prospectus_name}")
+        except Exception as e:
+            try:
+                from core.models import Prospectus
+                prosp = Prospectus.objects.get(prospectus_id=prospectus_id_for_thread)
+                prosp.parse_status = 'failed'
+                prosp.save()
+            except:
+                pass
+            print(f"[ERROR] Parsing failed for {prospectus_name}: {e}")
+            import traceback
+            traceback.print_exc()
+
+    thread = threading.Thread(target=parse_in_background)
+    thread.daemon = True
+    thread.start()
+
+    print(f"[RESUME_PARSING] Background thread started for: {prospectus_name}")
+
+    return Response({
+        'message': 'Parsing started successfully. This may take 5-10 minutes depending on document size.',
+        'prospectus_id': str(prospectus.prospectus_id),
+        'prospectus_name': prospectus.prospectus_name,
+        'previous_status': previous_status,
+        'new_status': prospectus.parse_status
     }, status=status.HTTP_200_OK)
 
 

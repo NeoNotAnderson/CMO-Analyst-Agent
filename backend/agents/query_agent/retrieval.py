@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 import numpy as np
+from .rag_logger import log_semantic_results, log_keyword_results, log_rrf_results, log_rerank_results
 
 load_dotenv()
 
@@ -98,6 +99,7 @@ def semantic_search(
             'source': 'semantic'
         })
 
+    log_semantic_results(query, search_results)
     return search_results
 
 
@@ -165,6 +167,7 @@ def keyword_search(
             'source': 'keyword'
         })
 
+    log_keyword_results(query, search_results)
     return search_results
 
 
@@ -224,6 +227,7 @@ def reciprocal_rank_fusion(
     # Sort by RRF score (descending)
     rrf_results.sort(key=lambda x: x['rrf_score'], reverse=True)
 
+    log_rrf_results(rrf_results)
     return rrf_results
 
 
@@ -261,9 +265,10 @@ def rerank_with_cross_encoder(
 
     # Sort by rerank score
     chunks.sort(key=lambda x: x['rerank_score'], reverse=True)
+    final = chunks[:top_k]
 
-    # Return top-k
-    return chunks[:top_k]
+    log_rerank_results(query, final)
+    return final
 
 
 def hybrid_search(

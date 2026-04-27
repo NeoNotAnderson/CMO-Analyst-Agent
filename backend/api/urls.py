@@ -21,6 +21,7 @@ urlpatterns = [
     path('prospectus/upload/', views.upload_prospectus, name='upload_prospectus'),
     path('prospectus/list/', views.get_prospectus_list, name='prospectus_list'),
     path('prospectus/<uuid:prospectus_id>/status/', views.get_prospectus_status, name='prospectus_status'),
+    path('prospectus/resume-parsing/', views.resume_parsing, name='resume_parsing'),
 
     # Chat endpoints
     path('chat/message/', views.send_chat_message, name='chat_message'),

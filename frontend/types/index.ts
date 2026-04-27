@@ -21,8 +21,18 @@ export type ParseStatus =
   | 'pending'
   | 'parsing_index'
   | 'parsing_sections'
+  | 'creating_chunks'
   | 'completed'
   | 'failed';
+
+export interface SetActiveProspectusResponse {
+  message: string;
+  prospectus_id: string;
+  prospectus_name: string;
+  parse_status: ParseStatus;
+  needs_parsing: boolean;
+  parsing_message?: string;
+}
 
 export interface ChatMessage {
   id: string;

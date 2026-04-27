@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage
 from .prompts import QUERY_AGENT_SYSTEM_PROMPT
 from .tools import ALL_TOOLS
+from .rag_logger import log_llm_call
 from dotenv import load_dotenv
 import os
 
@@ -77,10 +78,18 @@ CURRENT SESSION CONTEXT:
 
     response = llm_with_tools.invoke(messages)
 
+    tool_calls = response.tool_calls if hasattr(response, 'tool_calls') and response.tool_calls else None
+    log_llm_call(
+        step="agent_node",
+        model=llm.model_name,
+        n_messages=len(messages),
+        tool_calls=tool_calls,
+    )
+
     # Debug tool calls
-    if hasattr(response, 'tool_calls') and response.tool_calls:
-        print(f"[QUERY AGENT NODE] LLM requested {len(response.tool_calls)} tool call(s):")
-        for i, tool_call in enumerate(response.tool_calls):
+    if tool_calls:
+        print(f"[QUERY AGENT NODE] LLM requested {len(tool_calls)} tool call(s):")
+        for i, tool_call in enumerate(tool_calls):
             print(f"  {i+1}. {tool_call['name']}")
     else:
         print(f"[QUERY AGENT NODE] No tool calls - direct response")

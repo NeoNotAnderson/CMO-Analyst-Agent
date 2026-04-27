@@ -14,6 +14,7 @@ const getStatusColor = (status: string): string => {
       return 'bg-green-100 text-green-800';
     case 'parsing_index':
     case 'parsing_sections':
+    case 'creating_chunks':
     case 'failed':
       return 'bg-red-100 text-red-800';
     case 'pending':
@@ -30,6 +31,8 @@ const getStatusLabel = (status: string): string => {
       return 'Parsing Index';
     case 'parsing_sections':
       return 'Parsing Sections';
+    case 'creating_chunks':
+      return 'Creating Chunks';
     case 'completed':
       return 'Completed';
     case 'failed':
@@ -40,7 +43,7 @@ const getStatusLabel = (status: string): string => {
 };
 
 const isProcessingStatus = (status: string): boolean => {
-  return ['pending', 'parsing_index', 'parsing_sections'].includes(status);
+  return ['pending', 'parsing_index', 'parsing_sections', 'creating_chunks'].includes(status);
 };
 
 export default function ProspectusSidebar({
