@@ -109,7 +109,9 @@ def search_relevant_conversation_history(
         # Get the conversation thread
         thread = ConversationThread.objects.get(thread_id=thread_id)
 
-        # Get all user and assistant messages, ordered by time
+        # Get all user and assistant messages, ordered by time.
+        # Exclude any trailing user message that has no assistant reply
+        # (left behind by a failed query) — it has no useful content to surface.
         all_messages = ChatMessage.objects.filter(
             thread=thread,
             role__in=['user', 'assistant']
@@ -118,8 +120,16 @@ def search_relevant_conversation_history(
         if not all_messages.exists():
             return []
 
-        # Convert to list for easier slicing
+        # Convert to list and strip any trailing user message that has no assistant reply.
+        # This happens when a previous query failed — the user message was saved but
+        # the agent never produced a response. Including it gives the LLM a dangling
+        # half-exchange with no answer, which is misleading.
         message_list = list(all_messages)
+        if message_list and message_list[-1].role == 'user':
+            message_list = message_list[:-1]
+
+        if not message_list:
+            return []
         total_messages = len(message_list)
 
         # If conversation is short, return all messages
@@ -173,16 +183,19 @@ def search_relevant_conversation_history(
                 'similarity_score': similarity
             })
 
-            # Find and add the assistant response (next message after this user message)
+            # Find the assistant reply: must be the very next message AND role='assistant'
+            # If the next message is another user message (e.g. a failed query left no reply),
+            # skip it — an incomplete exchange is worse than no context at all.
             user_msg_index = message_list.index(user_msg)
-            if user_msg_index + 1 < len(message_list):
-                assistant_msg = message_list[user_msg_index + 1]
-                if assistant_msg.role == 'assistant':
+            next_index = user_msg_index + 1
+            if next_index < len(message_list):
+                next_msg = message_list[next_index]
+                if next_msg.role == 'assistant':
                     relevant_exchanges.append({
-                        'role': assistant_msg.role,
-                        'content': assistant_msg.content,
-                        'timestamp': assistant_msg.created_at.isoformat(),
-                        'similarity_score': similarity  # Inherit similarity from user message
+                        'role': next_msg.role,
+                        'content': next_msg.content,
+                        'timestamp': next_msg.created_at.isoformat(),
+                        'similarity_score': similarity
                     })
 
         # Add recent messages
